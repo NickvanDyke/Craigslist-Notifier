@@ -1,0 +1,18 @@
+gtx 680
+gtx 690
+gtx 760
+gtx 770
+gtx 780
+gtx 780 ti
+gtx 960
+gtx 970
+gtx 980
+980 ti
+r9 290
+290x
+295x2
+xr341ck
+ultrawide monitor
+4k monitor
+144hz monitor
+1440p monitor
