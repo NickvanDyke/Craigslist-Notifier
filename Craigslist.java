@@ -76,8 +76,10 @@ public final class Craigslist {
 		}
 		ArrayList<Ad> result = new ArrayList<Ad>();
 		Ad temp;
-		if (str.contains("noresults"))
+		if (str.contains("noresults")) {
+			System.out.println("noresults");
 			return result;
+		}
 		String title, date, location, link;
 		String[] htm;
 		int price = 0;
@@ -136,7 +138,7 @@ public final class Craigslist {
 		text = sc.nextLine();
 		while (sc.hasNextLine() && !text.contains("how often to check listings, in minutes:")) {
 			if (text.length() > 1)
-				searchTerms.add(text);
+				searchTerms.add(text.replace(" ", "%20"));
 			text = sc.nextLine();
 		}
 		CraigslistNotifier.setFrequency(Integer.parseInt(text.substring(41)));
