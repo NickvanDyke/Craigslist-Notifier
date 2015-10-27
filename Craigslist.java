@@ -13,7 +13,7 @@ public final class Craigslist {
 	public static String[] splitLocalListingsHtml(String html) {
 		if (html.contains("<h4"))
 			return html.substring(html.indexOf("<p"), html.indexOf("<h4")).split("</p>");
-		return html.substring(html.indexOf("<p"), html.indexOf("<div id=\"mapcontainer")).split("</p>");
+		return html.substring(html.indexOf("<p"), html.lastIndexOf("<div id=\"mapcontainer")).split("</p>");
 	}
 
 	public static void updateAds() {
@@ -26,6 +26,7 @@ public final class Craigslist {
 			cityy = city;
 			for (String term : searchTerms) {
 				firstPageDone = false;
+				System.out.println(term + " " + city);
 				do {
 					if (firstPageDone)
 						htm = Scraper.getHtml(htm.substring(htm.indexOf("next\" href=\"") + 12, htm.indexOf("<meta name=\"viewport") - 2));
@@ -65,10 +66,13 @@ public final class Craigslist {
 			}
 		}
 	}
-	
+
 	//given the html code for a Craigslist page, creates and returns an ArrayList containing Ads created from the html code
 	public static ArrayList<Ad> createAds(String str) {
+		if (str.contains("this ip has been automatically blocked"))
+			CraigslistNotifier.sendEmail("IP blocked", "rip");
 		ArrayList<Ad> result = new ArrayList<Ad>();
+		Ad temp;
 		if (str.contains("noresults"))
 			return result;
 		String title, date, location, link;
@@ -87,11 +91,13 @@ public final class Craigslist {
 			if (html.contains("price"))
 				price = Integer.parseInt(html.substring(html.indexOf("price") + 8, html.indexOf("</span")));
 			else price = 0;
-			result.add(new Ad(title, price, date, location, link, cityy));
+			temp = new Ad(title, price, date, location, link, cityy);
+			System.out.println(temp);
+			result.add(temp);
 		}
 		return result;
 	}
-	
+
 	//deletes the ad if it's date is 90 days older than the current date
 	public static void deleteOldAds() {
 		ArrayList<Ad> adsToBeDeleted = new ArrayList<Ad>();
@@ -102,19 +108,36 @@ public final class Craigslist {
 			ads.remove(ad);
 	}
 
-	public static void loadSearchTerms() throws FileNotFoundException {
-		Scanner sc = new Scanner(new File("searchTerms.txt"));
-		while (sc.hasNextLine()) {
-			searchTerms.add(sc.nextLine().replace(' ', '+'));
+	public static void loadSettings() throws FileNotFoundException {
+		Scanner sc = new Scanner(new File("settings.txt"));
+		String text = sc.next();
+		while (!text.equals("email:")) {
+			text = sc.next();
 		}
-		sc.close();
-	}
-
-	public static void loadCities() throws FileNotFoundException {
-		Scanner sc = new Scanner(new File("cities.txt"));
-		while (sc.hasNextLine()) {
-			cities.add(sc.nextLine());
+		text = sc.next();
+		CraigslistNotifier.setEmail(text.substring(0, text.indexOf("@")));
+		while (!text.equals("password:")) {
+			text = sc.next();
 		}
+		CraigslistNotifier.setPassword(sc.next());
+		while (!text.equals("email:"))
+			text = sc.next();
+		CraigslistNotifier.setRecipient(sc.next());
+		while (sc.hasNextLine() && !text.contains("cities to search"))
+			text = sc.nextLine();
+		text = sc.nextLine();
+		while (sc.hasNextLine() && !text.contains("search terms; put each entry on its own line:")) {
+			if (text.length() > 1)
+				cities.add(text);
+			text = sc.nextLine();
+		}
+		text = sc.nextLine();
+		while (sc.hasNextLine() && !text.contains("how often to check listings, in minutes:")) {
+			if (text.length() > 1)
+				searchTerms.add(text);
+			text = sc.nextLine();
+		}
+		CraigslistNotifier.setFrequency(Integer.parseInt(text.substring(41)));
 		sc.close();
 	}
 
