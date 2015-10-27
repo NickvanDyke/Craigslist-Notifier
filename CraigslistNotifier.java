@@ -14,21 +14,23 @@ public final class CraigslistNotifier {
 	public static void main(String[] args) {
 		try {
 			Craigslist.loadSettings();
-			Craigslist.loadAds();
 		}
 		catch (FileNotFoundException e) {
 			try {
 				String n = System.getProperty("line.separator");
-				FileUtils.writeStringToFile(new File("settings.txt"), "Gmail account to send emails from:" + n + "email: " + n + "password: " + n + "You must enable less secure apps to access your account; do so here:" + n + "https://www.google.com/settings/security/lesssecureapps" + n + n + "recipient's email: " + n + n + "cities to search; ensure the city actually has it's own craigslist (i.e. <city>.craigslist.org is a valid url)" + n + "put each entry on its own line:" + n + n + n + "search terms (put each entry on its own line):" + n + n + n + "how often to check listings, in minutes: ");
+				FileUtils.writeStringToFile(new File("settings.txt"), "Gmail account to send emails from:" + n + "email: " + n + "password: " + n + "You must enable less secure apps to access your account; do so here:" + n + "https://www.google.com/settings/security/lesssecureapps" + n + n + "recipient's email: " + n + n + "cities to search; ensure the city actually has its own craigslist (i.e. <city>.craigslist.org is a valid url)" + n + "put each entry on its own line:" + n + n + n + "search terms; put each entry on its own line:" + n + n + n + "how often to check listings, in minutes: ");
 			}
 			catch (IOException i) {
-				System.out.println("IOException while creating settings.txt");
+				System.out.println("IOException while loading settings.txt");
 			}
 			JOptionPane.showMessageDialog(null, "This is your first time running the app.\nPlease fill out the settings.txt file that has been\ncreated in the directory that this app resides in.\nThen launch the app again.");
 			System.exit(0);
 		}
-		catch (IOException e) {
-			System.out.println("IOException while loading");
+		try {
+		Craigslist.loadAds();
+		}
+		catch (Exception e) {
+			System.out.println("IOException while loading ads");
 		}
 		while (true) {
 			Craigslist.updateAds();

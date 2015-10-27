@@ -69,8 +69,11 @@ public final class Craigslist {
 
 	//given the html code for a Craigslist page, creates and returns an ArrayList containing Ads created from the html code
 	public static ArrayList<Ad> createAds(String str) {
-		if (str.contains("this ip has been automatically blocked"))
+		if (str.contains("this ip has been automatically blocked")) {
 			CraigslistNotifier.sendEmail("IP blocked", "rip");
+			System.out.print("ip blocked");
+			System.exit(0);
+		}
 		ArrayList<Ad> result = new ArrayList<Ad>();
 		Ad temp;
 		if (str.contains("noresults"))
@@ -111,20 +114,19 @@ public final class Craigslist {
 	public static void loadSettings() throws FileNotFoundException {
 		Scanner sc = new Scanner(new File("settings.txt"));
 		String text = sc.next();
-		while (!text.equals("email:")) {
+		while (!text.equals("email:"))
 			text = sc.next();
-		}
 		text = sc.next();
 		CraigslistNotifier.setEmail(text.substring(0, text.indexOf("@")));
-		while (!text.equals("password:")) {
+		while (!text.equals("password:"))
 			text = sc.next();
-		}
 		CraigslistNotifier.setPassword(sc.next());
 		while (!text.equals("email:"))
 			text = sc.next();
 		CraigslistNotifier.setRecipient(sc.next());
 		while (sc.hasNextLine() && !text.contains("cities to search"))
 			text = sc.nextLine();
+		sc.nextLine();
 		text = sc.nextLine();
 		while (sc.hasNextLine() && !text.contains("search terms; put each entry on its own line:")) {
 			if (text.length() > 1)
