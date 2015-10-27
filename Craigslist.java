@@ -114,14 +114,14 @@ public final class Craigslist {
 	public static void loadSettings() throws FileNotFoundException {
 		Scanner sc = new Scanner(new File("settings.txt"));
 		String text = sc.next();
-		while (!text.equals("email:"))
+		while (!text.equals("address:"))
 			text = sc.next();
 		text = sc.next();
 		CraigslistNotifier.setEmail(text.substring(0, text.indexOf("@")));
 		while (!text.equals("password:"))
 			text = sc.next();
 		CraigslistNotifier.setPassword(sc.next());
-		while (!text.equals("email:"))
+		while (!text.equals("address:"))
 			text = sc.next();
 		CraigslistNotifier.setRecipient(sc.next());
 		while (sc.hasNextLine() && !text.contains("cities to search"))
