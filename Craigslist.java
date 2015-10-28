@@ -28,9 +28,17 @@ public final class Craigslist {
 				firstPageDone = false;
 				System.out.println(term + " " + city);
 				do {
+					try {
 					if (firstPageDone)
 						htm = Scraper.getHtml(htm.substring(htm.indexOf("next\" href=\"") + 12, htm.indexOf("<meta name=\"viewport") - 2));
 					else htm = Scraper.getHtml("https://" + city + ".craigslist.org/search/sss?sort=rel&query=" + term);
+					}
+					catch (IOException e) {
+						CraigslistNotifier.sendEmail("IP blocked", "rip");
+						System.out.print("ip blocked");
+						System.exit(0);
+					}
+					System.out.println(htm);
 					for (Ad temp : createAds(htm)) {
 						//System.out.println(temp);
 						if (ads.isEmpty()) {
