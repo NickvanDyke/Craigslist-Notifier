@@ -9,7 +9,6 @@ public final class CraigslistNotifier {
 	private static String email;
 	private static String password;
 	private static String recipient;
-	private static int frequency;
 
 	public static void main(String[] args) {
 		try {
@@ -29,7 +28,7 @@ public final class CraigslistNotifier {
 		try {
 			Craigslist.loadAds();
 		}
-		catch (Exception e) {
+		catch (IOException e) {
 			System.out.println("IOException while loading ads");
 		}
 		while (true) {
@@ -42,12 +41,6 @@ public final class CraigslistNotifier {
 			}
 			for (Ad ad : Craigslist.getNewAds())
 				sendEmail(ad.getTitle(), "$" + ad.getPrice() + " in " + ad.getLocation() + "\n" + ad.getLink());
-			try {
-				Thread.sleep(frequency);
-			}
-			catch (InterruptedException e) {
-				System.out.println("InterruptedException");
-			}
 		}
 	}
 
@@ -75,9 +68,5 @@ public final class CraigslistNotifier {
 
 	public static void setRecipient(String str) {
 		recipient = str;
-	}
-
-	public static void setFrequency(int n) {
-		frequency = n * 60000;
 	}
 }

@@ -9,6 +9,7 @@ public final class Craigslist {
 	private static ArrayList<String> searchTerms = new ArrayList<String>();
 	private static ArrayList<String> cities = new ArrayList<String>();
 	private static String cityy;
+	private static int frequency;
 
 	public static String[] splitLocalListingsHtml(String html) {
 		if (html.contains("<h4"))
@@ -29,14 +30,18 @@ public final class Craigslist {
 				System.out.println(term + " " + city);
 				do {
 					try {
-					if (firstPageDone)
-						htm = Scraper.getHtml(htm.substring(htm.indexOf("next\" href=\"") + 12, htm.indexOf("<meta name=\"viewport") - 2));
-					else htm = Scraper.getHtml("https://" + city + ".craigslist.org/search/sss?sort=rel&query=" + term);
+						Thread.sleep(frequency / (searchTerms.size() * cities.size()));
+						if (firstPageDone)
+							htm = Scraper.getHtml(htm.substring(htm.indexOf("next\" href=\"") + 12, htm.indexOf("<meta name=\"viewport") - 2));
+						else htm = Scraper.getHtml("https://" + city + ".craigslist.org/search/sss?sort=rel&query=" + term);
 					}
 					catch (IOException e) {
 						CraigslistNotifier.sendEmail("IP blocked", "rip");
 						System.out.print("ip blocked");
 						System.exit(0);
+					}
+					catch (InterruptedException e) {
+						System.out.println("InterruptedException");
 					}
 					System.out.println(htm);
 					for (Ad temp : createAds(htm)) {
@@ -77,11 +82,6 @@ public final class Craigslist {
 
 	//given the html code for a Craigslist page, creates and returns an ArrayList containing Ads created from the html code
 	public static ArrayList<Ad> createAds(String str) {
-		if (str.contains("This IP has been automatically blocked.")) {
-			CraigslistNotifier.sendEmail("IP blocked", "rip");
-			System.out.print("ip blocked");
-			System.exit(0);
-		}
 		ArrayList<Ad> result = new ArrayList<Ad>();
 		Ad temp;
 		if (str.contains("noresults")) {
@@ -149,7 +149,7 @@ public final class Craigslist {
 				searchTerms.add(text.replace(" ", "%20"));
 			text = sc.nextLine();
 		}
-		CraigslistNotifier.setFrequency(Integer.parseInt(text.substring(41)));
+		frequency = Integer.parseInt(text.substring(41));
 		sc.close();
 	}
 
