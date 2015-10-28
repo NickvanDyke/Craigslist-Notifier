@@ -69,7 +69,7 @@ public final class Craigslist {
 
 	//given the html code for a Craigslist page, creates and returns an ArrayList containing Ads created from the html code
 	public static ArrayList<Ad> createAds(String str) {
-		if (str.contains("this ip has been automatically blocked")) {
+		if (str.contains("This IP has been automatically blocked.")) {
 			CraigslistNotifier.sendEmail("IP blocked", "rip");
 			System.out.print("ip blocked");
 			System.exit(0);
