@@ -73,7 +73,7 @@ public final class Craigslist {
 					firstPageDone = true;
 					try {
 						System.out.println("sleeping");
-						Thread.sleep((long)(frequency + Math.random()/ (searchTerms.size() * cities.size())));
+						Thread.sleep((long)((frequency + Math.random())/ (searchTerms.size() * cities.size())));
 						System.out.println("resuming");
 					}
 					catch (InterruptedException e) {
