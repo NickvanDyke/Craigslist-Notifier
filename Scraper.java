@@ -6,12 +6,13 @@ public final class Scraper {
 
 	public static String getHtml(String url) throws IOException {
 		html = "";
-			BufferedReader reader = new BufferedReader(new InputStreamReader(new URL(url).openStream()));
-			String line = reader.readLine();
-			while (line != null) {
-				html += line;
-				line = reader.readLine();
-			}
+		//Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("14.152.49.193", 80));
+		BufferedReader reader = new BufferedReader(new InputStreamReader(new URL(url).openConnection().getInputStream()));
+		String line = reader.readLine();
+		while (line != null) {
+			html += line;
+			line = reader.readLine();
+		}
 		return html;
 	}
 }

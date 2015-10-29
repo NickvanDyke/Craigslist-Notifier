@@ -9,7 +9,7 @@ public final class Craigslist {
 	private static ArrayList<String> searchTerms = new ArrayList<String>();
 	private static ArrayList<String> cities = new ArrayList<String>();
 	private static String cityy;
-	private static int frequency;
+	private static double frequency;
 
 	public static String[] splitLocalListingsHtml(String html) {
 		if (html.contains("<h4"))
@@ -27,25 +27,21 @@ public final class Craigslist {
 			cityy = city;
 			for (String term : searchTerms) {
 				firstPageDone = false;
-				System.out.println(term + " " + city);
+				System.out.println(term.replace("%20", " ") + " " + city);
 				do {
 					try {
-						Thread.sleep(frequency / (searchTerms.size() * cities.size()));
 						if (firstPageDone)
 							htm = Scraper.getHtml(htm.substring(htm.indexOf("next\" href=\"") + 12, htm.indexOf("<meta name=\"viewport") - 2));
 						else htm = Scraper.getHtml("https://" + city + ".craigslist.org/search/sss?sort=rel&query=" + term);
 					}
 					catch (IOException e) {
 						CraigslistNotifier.sendEmail("IP blocked", "rip");
-						System.out.print("ip blocked");
+						System.out.print("ip banned");
 						System.exit(0);
 					}
-					catch (InterruptedException e) {
-						System.out.println("InterruptedException");
-					}
-					System.out.println(htm);
+					//System.out.println(htm);
 					for (Ad temp : createAds(htm)) {
-						//System.out.println(temp);
+						System.out.println(temp);
 						if (ads.isEmpty()) {
 							ads.add(temp);
 							newAds.add(temp);
@@ -75,6 +71,14 @@ public final class Craigslist {
 						}
 					}
 					firstPageDone = true;
+					try {
+						System.out.println("sleeping");
+						Thread.sleep((long)(frequency + Math.random()/ (searchTerms.size() * cities.size())));
+						System.out.println("resuming");
+					}
+					catch (InterruptedException e) {
+						System.out.println("InterruptedException");
+					}
 				} while(htm.contains("next\" href=\""));
 			}
 		}
@@ -105,7 +109,6 @@ public final class Craigslist {
 				price = Integer.parseInt(html.substring(html.indexOf("price") + 8, html.indexOf("</span")));
 			else price = 0;
 			temp = new Ad(title, price, date, location, link, cityy);
-			System.out.println(temp);
 			result.add(temp);
 		}
 		return result;
@@ -149,7 +152,7 @@ public final class Craigslist {
 				searchTerms.add(text.replace(" ", "%20"));
 			text = sc.nextLine();
 		}
-		frequency = Integer.parseInt(text.substring(41));
+		frequency = Integer.parseInt(text.substring(41)) * 60000 - 0.5;
 		sc.close();
 	}
 
