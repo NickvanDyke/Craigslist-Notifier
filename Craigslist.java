@@ -73,7 +73,7 @@ public final class Craigslist {
 					firstPageDone = true;
 					try {
 						System.out.println("sleeping");
-						Thread.sleep((long)((frequency + Math.random())/ (searchTerms.size() * cities.size())));
+						Thread.sleep((long)(((frequency + Math.random()) * 60000) / (searchTerms.size() * cities.size())));
 						System.out.println("resuming");
 					}
 					catch (InterruptedException e) {
@@ -152,7 +152,7 @@ public final class Craigslist {
 				searchTerms.add(text.replace(" ", "%20"));
 			text = sc.nextLine();
 		}
-		frequency = Integer.parseInt(text.substring(41)) * 60000 - 0.5;
+		frequency = Integer.parseInt(text.substring(41)) - 0.5;
 		sc.close();
 	}
 
