@@ -8,6 +8,7 @@ public final class Craigslist {
 	private static ArrayList<Ad> newAds = new ArrayList<Ad>();
 	private static ArrayList<String> searchTerms = new ArrayList<String>();
 	private static ArrayList<String> cities = new ArrayList<String>();
+	private static ArrayList<String> negativeKeywords = new ArrayList<String>();
 	private static String cityy;
 	private static double frequency;
 
@@ -79,9 +80,17 @@ public final class Craigslist {
 					catch (InterruptedException e) {
 						System.out.println("InterruptedException");
 					}
-				} while(htm.contains("next\" href=\""));
+				} while (htm.contains("next\" href=\""));
 			}
 		}
+		for (Ad ad : ads)
+			for (String neg : negativeKeywords)
+				if (ad.getTitle().toLowerCase().contains(neg.toLowerCase()))
+					ads.remove(ad);
+		for (Ad ad : newAds)
+			for (String neg : negativeKeywords)
+				if (ad.getTitle().toLowerCase().contains(neg.toLowerCase()))
+					newAds.remove(ad);
 	}
 
 	//given the html code for a Craigslist page, creates and returns an ArrayList containing Ads created from the html code
@@ -147,9 +156,15 @@ public final class Craigslist {
 			text = sc.nextLine();
 		}
 		text = sc.nextLine();
-		while (sc.hasNextLine() && !text.contains("how often to check listings, in minutes:")) {
+		while (sc.hasNextLine() && !text.contains("negative keywords")) {
 			if (text.length() > 1)
 				searchTerms.add(text.replace(" ", "%20"));
+			text = sc.nextLine();
+		}
+		text = sc.nextLine();
+		while (sc.hasNextLine() && !text.contains("how often to check listings, in minutes: ")) {
+			if (text.length() > 1)
+				negativeKeywords.add(text);
 			text = sc.nextLine();
 		}
 		frequency = Integer.parseInt(text.substring(41)) - 0.5;
