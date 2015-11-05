@@ -5,16 +5,14 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class Ad implements Serializable {
-	private String title, location, link;
-	private int price, oldPrice;
+	private String title, location, link, body;
+	private int price;
 	private Date date;
-	private boolean priceChange;
-	private static DateFormat df = new SimpleDateFormat("EEE dd MMM hh:mm:ss a");
+	private static DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss");
 
-	public Ad(String title, int price, String date, String location, String link, String city) {
+	public Ad(String title, int price, String date, String location, String link, String city, String body) {
 		this.title = title;
 		this.price = price;
-		priceChange = false;
 		try {
 			this.date = df.parse(date);
 		}
@@ -22,12 +20,11 @@ public class Ad implements Serializable {
 			System.out.println("ParseException");
 		}
 		this.location = location;
-		this.link = "https://" + city + ".craigslist.org" + link;
+		this.link = link;
+		this.body = body;
 	}
 
 	public String toString() {
-		if (priceChange)
-			return title + " price change from " + oldPrice + " to " + price + ", updated at " + date.toString() + " " + link;
 		return title + " for $" + price + " in " + location + " posted at " + date.toString() + " " + link;
 	}
 
@@ -54,18 +51,13 @@ public class Ad implements Serializable {
 	public String getTitle() {
 		return title;
 	}
+	
+	public String getBody() {
+		return body;
+	}
 
 	public int getPrice() {
 		return price;
-	}
-	
-	public int getOldPrice() {
-		return oldPrice;
-	}
-	
-	public void setOldPrice(int n) {
-		priceChange = true;
-		oldPrice = n;
 	}
 
 	public Date getDate() {

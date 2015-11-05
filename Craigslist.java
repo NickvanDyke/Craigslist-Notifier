@@ -22,65 +22,57 @@ public final class Craigslist {
 		Ad match = null;
 		String htm = "";
 		int result = -2;
-		boolean firstPageDone;
 		newAds.clear();
 		for (String city : cities) {
 			cityy = city;
 			for (String term : searchTerms) {
-				firstPageDone = false;
 				System.out.println(term.replace("%20", " ") + " " + city);
-				do {
-					try {
-						if (firstPageDone)
-							htm = Scraper.getHtml(htm.substring(htm.indexOf("next\" href=\"") + 12, htm.indexOf("<meta name=\"viewport") - 2));
-						else htm = Scraper.getHtml("https://" + city + ".craigslist.org/search/sss?sort=rel&query=" + term);
+				try {
+					htm = Scraper.getHtml("https://" + city + ".craigslist.org/search/sss?format=rss&query=" + term + "&sort=rel");
+				}
+				catch (IOException e) {
+					CraigslistNotifier.sendEmail("IP blocked", "rip");
+					System.out.print("ip banned");
+					System.exit(0);
+				}
+				//System.out.println(htm);
+				for (Ad temp : createAds(htm)) {
+					System.out.println(temp);
+					if (ads.isEmpty()) {
+						ads.add(temp);
+						newAds.add(temp);
 					}
-					catch (IOException e) {
-						CraigslistNotifier.sendEmail("IP blocked", "rip");
-						System.out.print("ip banned");
-						System.exit(0);
-					}
-					//System.out.println(htm);
-					for (Ad temp : createAds(htm)) {
-						System.out.println(temp);
-						if (ads.isEmpty()) {
-							ads.add(temp);
-							newAds.add(temp);
+					result = -2;
+					for (Ad ad : ads) {
+						//System.out.println(temp.getTitle() + " compared to " + ad.getTitle());
+						if (result < temp.compareTo(ad)) {
+							result = temp.compareTo(ad);
+							if (result == 1)
+								match = ad;
 						}
-						result = -2;
-						for (Ad ad : ads) {
-							//System.out.println(temp.getTitle() + " compared to " + ad.getTitle());
-							if (result < temp.compareTo(ad)) {
-								result = temp.compareTo(ad);
-								if (result == 1)
-									match = ad;
-							}
-							//System.out.println(result);
-						}
-						switch (result) {
-						case 0:
-							ads.add(temp);
-							newAds.add(temp);
-							break;
-						case 1:
-							ads.add(temp);
-							temp.setOldPrice(match.getPrice());
-							ads.remove(match);
-							newAds.add(temp);
-							break;
-						default: break;
-						}
+						//System.out.println(result);
 					}
-					firstPageDone = true;
-					try {
-						System.out.println("sleeping");
-						Thread.sleep((long)(((frequency + Math.random()) * 60000) / (searchTerms.size() * cities.size())));
-						System.out.println("resuming");
+					switch (result) {
+					case 0:
+						ads.add(temp);
+						newAds.add(temp);
+						break;
+					case 1:
+						ads.add(temp);
+						ads.remove(match);
+						newAds.add(temp);
+						break;
+					default: break;
 					}
-					catch (InterruptedException e) {
-						System.out.println("InterruptedException");
-					}
-				} while (htm.contains("next\" href=\""));
+				}
+				try {
+					System.out.println("sleeping");
+					Thread.sleep((long)(((frequency + Math.random()) * 60000) / (searchTerms.size() * cities.size())));
+					System.out.println("resuming");
+				}
+				catch (InterruptedException e) {
+					System.out.println("InterruptedException");
+				}
 			}
 		}
 		for (Ad ad : ads)
@@ -93,31 +85,27 @@ public final class Craigslist {
 					newAds.remove(ad);
 	}
 
-	//given the html code for a Craigslist page, creates and returns an ArrayList containing Ads created from the html code
+	//given the html code for a Craigslist RSS page, creates and returns an ArrayList containing Ads created from the html code
 	public static ArrayList<Ad> createAds(String str) {
 		ArrayList<Ad> result = new ArrayList<Ad>();
 		Ad temp;
-		if (str.contains("noresults")) {
-			System.out.println("noresults");
+		if (str.contains("<rdf:Seq>\n </rdf:Seq>")) {
+			System.out.println("no results");
 			return result;
 		}
-		String title, date, location, link;
-		String[] htm;
+		String title, date, location, link, body;
 		int price = 0;
-		if (str.contains("<h4"))
-			htm =  str.substring(str.indexOf("<p"), str.indexOf("<h4")).split("</p>");
-		else htm = str.substring(str.indexOf("<p"), str.indexOf("<div id=\"mapcontainer")).split("</p>");
+		String[] htm =  str.substring(str.indexOf("<item rdf"), str.lastIndexOf("</item>")).split("</item>");
 		for (String html : htm) {
-			title = html.substring(html.indexOf("hdrlnk") + 8, html.indexOf("</a> </span>"));
-			date = html.substring(html.indexOf("title") + 7, html.indexOf("title") + 29);
-			if (html.contains("<small>"))
-				location = html.substring(html.indexOf("<small>") + 9, html.indexOf("</small>") - 1);
-			else location = "N/A";
-			link = html.substring(html.indexOf("href") + 6, html.indexOf("html") + 4);
-			if (html.contains("price"))
-				price = Integer.parseInt(html.substring(html.indexOf("price") + 8, html.indexOf("</span")));
+			title = html.substring(html.indexOf("<title><![CDATA[") + 16, html.indexOf("(") - 1);
+			body = html.substring(html.indexOf("<description><![CDATA[") + 22, html.indexOf("]]></description>"));
+			date = html.substring(html.indexOf("<dc:date>") + 9, html.indexOf("</dc:date>"));
+			location = html.substring(html.indexOf("(") + 1, html.indexOf(")"));
+			link = html.substring(html.indexOf("<link>") + 6, html.indexOf("</link>"));
+			if (html.contains("&#x0024;"))
+				price = Integer.parseInt(html.substring(html.indexOf("&#x0024;") + 8, html.indexOf("]]></title>")));
 			else price = 0;
-			temp = new Ad(title, price, date, location, link, cityy);
+			temp = new Ad(title, price, date, location, link, cityy, body);
 			result.add(temp);
 		}
 		return result;

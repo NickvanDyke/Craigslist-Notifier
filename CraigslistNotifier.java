@@ -17,7 +17,7 @@ public final class CraigslistNotifier {
 		catch (FileNotFoundException e) {
 			try {
 				String n = System.getProperty("line.separator");
-				FileUtils.writeStringToFile(new File("settings.txt"), "Gmail account to send emails from:" + n + "email address: " + n + "password: " + n + "You must enable less secure apps to access your account; do so here:" + n + "https://www.google.com/settings/security/lesssecureapps" + n + n + "recipient's email address: " + n + n + "cities to search; ensure the city actually has its own craigslist (i.e. <city>.craigslist.org is a valid url)" + n + "put each entry on its own line:" + n + n + n + "search terms; put each entry on its own line:" + n + n + n + "negative keywords; if the ad's title contains any of the given keywords, you will not receive an email notification for that ad" + n + "put each entry on its own line" + n + n + n + "how often to check listings, in minutes: ");
+				FileUtils.writeStringToFile(new File("settings.txt"), "Gmail account to send emails from:" + n + "email address: " + n + "password: " + n + "You must enable less secure apps to access your account; do so here:" + n + "https://www.google.com/settings/security/lesssecureapps" + n + n + "recipient's email address: " + n + n + "cities to search; ensure the city actually has its own craigslist (i.e. <city>.craigslist.org is a valid url)" + n + "put each entry on its own line:" + n + n + n + "search terms; put each entry on its own line:" + n + n + n + "negative keywords; if the ad's title contains any of the given keywords, you will not receive an email notification for that ad" + n + "put each entry on its own line:" + n + n + n + "how often to check listings, in minutes: ");
 			}
 			catch (IOException i) {
 				System.out.println("IOException while loading settings.txt");
@@ -40,7 +40,7 @@ public final class CraigslistNotifier {
 				System.out.println("IOException while saving");
 			}
 			for (Ad ad : Craigslist.getNewAds())
-				sendEmail(ad.getTitle(), "$" + ad.getPrice() + " in " + ad.getLocation() + "\n" + ad.getLink());
+				sendEmail(ad.getTitle(), "$" + ad.getPrice() + " - " + ad.getBody() + "\n" + ad.getLink());
 		}
 	}
 
