@@ -78,9 +78,11 @@ public final class CraigslistNotifier {
 			return result;
 		}
 		Ad temp;
-		String title, date, location = "n/a", link;
+		String title, date, location = "n/a", link, city;
 		String[] splitHtml;
 		int price = 0;
+		city = str.substring(str.indexOf("<option value=\"") + 15, str.indexOf("</option>"));
+		city = city.substring(0, city.indexOf("\">"));
 		if (str.contains("<h4"))
 			splitHtml =  str.substring(str.indexOf("<p"), str.indexOf("<h4")).split("</p>");		
 		else splitHtml = str.substring(str.indexOf("<p"), str.indexOf("<div id=\"mapcontainer")).split("</p>");
@@ -89,7 +91,7 @@ public final class CraigslistNotifier {
 			date = adHtml.substring(adHtml.indexOf("title") + 7, adHtml.indexOf("title") + 29);
 			if (adHtml.contains("<small>"))
 				location = adHtml.substring(adHtml.indexOf("<small>") + 9, adHtml.indexOf("</small>") - 1);
-			link = adHtml.substring(adHtml.indexOf("href") + 6, adHtml.indexOf("html") + 4);
+			link = "https://" + city + ".craigslist.org" + adHtml.substring(adHtml.indexOf("href") + 6, adHtml.indexOf("html") + 4);
 			if (adHtml.contains("price"))
 				price = Integer.parseInt(adHtml.substring(adHtml.indexOf("price") + 8, adHtml.indexOf("</span")));		
 			temp = new Ad(title, price, date, location, link);
