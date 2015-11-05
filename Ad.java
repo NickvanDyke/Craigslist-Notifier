@@ -10,7 +10,7 @@ public class Ad implements Serializable {
 	private Date date;
 	private static DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss");
 
-	public Ad(String title, int price, String date, String location, String link, String city, String body) {
+	public Ad(String title, int price, String date, String location, String link, String body) {
 		this.title = title;
 		this.price = price;
 		try {
@@ -30,22 +30,6 @@ public class Ad implements Serializable {
 
 	public boolean equals(Ad o) {
 		return title.equals(o.getTitle()) && price == o.getPrice() && location.equals(o.getLocation()) && link.equals(o.getLink()) && date.equals(o.getDate());
-	}
-
-	public int compareTo(Ad o) {
-		//returns 3 if all fields are the same; they are the exact same ad
-		if (this.equals(o))
-			return 3;
-		//returns 2 if they are duplicate postings; everything but link and date is the same
-		if (title.equals(o.getTitle()) && price == o.getPrice() && location.equals(o.getLocation()) && !link.equals(o.getLink()))
-			return 2;
-		//returns 1 if everything but price and date is the same; price change
-		if (title.equals(o.getTitle()) && price != o.getPrice() && location.equals(o.getLocation()) && link.equals(o.getLink()))
-			return 1;
-		//returns 0 if title, price, and link are different; they are completely different ads
-		if (!title.equals(o.getTitle()) && price != o.getPrice() && !link.equals(o.getLink()))
-			return 0;
-		return -1;
 	}
 
 	public String getTitle() {

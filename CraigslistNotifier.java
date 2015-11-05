@@ -9,111 +9,65 @@ import org.apache.commons.io.FileUtils;
 import java.util.Date;
 
 public final class CraigslistNotifier {
-	private static ArrayList<Ad> ads = new ArrayList<Ad>();
-	private static ArrayList<Ad> newAds = new ArrayList<Ad>();
-	private static ArrayList<String> searchTerms = new ArrayList<String>();
-	private static ArrayList<String> cities = new ArrayList<String>();
-	private static ArrayList<String> negativeKeywords = new ArrayList<String>();
-	private static String cityy;
-	private static double frequency;
+	private static ArrayList<Ad> ads = new ArrayList<Ad>(), newAds = new ArrayList<Ad>();
+	private static ArrayList<String> searchTerms = new ArrayList<String>(), cities = new ArrayList<String>(), negativeKeywords = new ArrayList<String>();
 	private static String email, password, recipient;
-	
+	private static double frequency;
+
 	public static void main(String[] args) {
-		try {
-			loadSettings();
-		}
-		catch (FileNotFoundException e) {
-			try {
-				String n = System.getProperty("line.separator");
-				FileUtils.writeStringToFile(new File("settings.txt"), "Gmail account to send emails from:" + n + "email address: " + n + "password: " + n + "You must enable less secure apps to access your account; do so here:" + n + "https://www.google.com/settings/security/lesssecureapps" + n + n + "recipient's email address: " + n + n + "cities to search; ensure the city actually has its own craigslist (i.e. <city>.craigslist.org is a valid url)" + n + "put each entry on its own line:" + n + n + n + "search terms; put each entry on its own line:" + n + n + n + "negative keywords; if the ad's title contains any of the given keywords, you will not receive an email notification for that ad" + n + "put each entry on its own line:" + n + n + n + "how often to check listings, in minutes: ");
-			}
-			catch (IOException i) {
-				System.out.println("IOException while loading settings.txt");
-			}
-			JOptionPane.showMessageDialog(null, "This is your first time running the app.\nPlease fill out the settings.txt file that has been\ncreated in the directory that this app resides in.\nThen launch the app again.");
-			System.exit(0);
-		}
-		try {
-			loadAds();
-		}
-		catch (IOException e) {
-			System.out.println("IOException while loading ads");
-		}
+		loadSettings();
+		loadAds();
 		while (true) {
-			updateAds();
+			for (String city : cities)
+				for (String term : searchTerms) {
+					updateAds(city, term);
+					for (Ad ad : newAds)
+						CraigslistNotifier.sendEmail(ad.getTitle(), "$" + ad.getPrice() + " - " + ad.getBody() + "\n" + ad.getLink());
+					saveAds();
+					try {
+						Thread.sleep((long)(((frequency + Math.random()) * 60000) / (searchTerms.size() * cities.size())));
+					}
+					catch (InterruptedException e) {
+						System.out.println("InterruptedException");
+					}
+				}
 		}
 	}
 
-	public static void updateAds() {
-		Ad match = null;
+	public static void updateAds(String city, String term) {
 		String htm = "";
-		int result = -2;
-		for (String city : cities) {
-			cityy = city;
-			for (String term : searchTerms) {
-				newAds.clear();
-				System.out.println(term.replace("%20", " ") + " " + city);
-				try {
-					htm = Scraper.getHtml("https://" + city + ".craigslist.org/search/sss?format=rss&query=" + term + "&sort=rel");
+		boolean skip, add;
+		newAds.clear();
+		System.out.println(term.replace("%20", " ") + " " + city);
+		try {
+			htm = Scraper.getHtml("https://" + city + ".craigslist.org/search/sss?format=rss&query=" + term + "&sort=rel");
+		}
+		catch (IOException e) {
+			sendEmail("IP blocked", "rip");
+			System.out.print("ip blocked");
+			System.exit(0);
+		}
+		for (Ad temp : createAds(htm)) {
+			skip = false;
+			add = true;
+			if (ads.isEmpty()) {
+				ads.add(temp);
+				newAds.add(temp);
+			}
+			for (String word : negativeKeywords)
+				if (skip == false && temp.getTitle().toLowerCase().contains(word.toLowerCase())) {
+					skip = true;
+					add = false;
 				}
-				catch (IOException e) {
-					CraigslistNotifier.sendEmail("IP blocked", "rip");
-					System.out.print("ip banned");
-					System.exit(0);
-				}
-				//System.out.println(htm);
-				for (Ad temp : createAds(htm)) {
-					if (ads.isEmpty()) {
-						ads.add(temp);
-						newAds.add(temp);
-					}
-					result = -2;
-					for (Ad ad : ads) {
-						//System.out.println(temp.getTitle() + " compared to " + ad.getTitle());
-						if (result < temp.compareTo(ad)) {
-							result = temp.compareTo(ad);
-							if (result == 1)
-								match = ad;
-						}
-						//System.out.println(result);
-					}
-					switch (result) {
-					case 0:
-						ads.add(temp);
-						newAds.add(temp);
-						break;
-					case 1:
-						ads.add(temp);
-						ads.remove(match);
-						newAds.add(temp);
-						break;
-					default: break;
-					}
-				}
-				for (Ad ad : newAds)
-					CraigslistNotifier.sendEmail(ad.getTitle(), "$" + ad.getPrice() + " - " + ad.getBody() + "\n" + ad.getLink());
-				try {
-					saveAds();
-					System.out.println("sleeping");
-					Thread.sleep((long)(((frequency + Math.random()) * 60000) / (searchTerms.size() * cities.size())));
-					System.out.println("resuming");
-				}
-				catch (InterruptedException e) {
-					System.out.println("InterruptedException");
-				}
-				catch (IOException e) {
-					System.out.println("IOException while saving");
-				}
+			if (!skip)
+				for (Ad ad : ads)
+					if (temp.equals(ad))
+						add = false;
+			if (add) {
+				ads.add(temp);
+				newAds.add(temp);
 			}
 		}
-		for (Ad ad : ads)
-			for (String neg : negativeKeywords)
-				if (ad.getTitle().toLowerCase().contains(neg.toLowerCase()))
-					ads.remove(ad);
-		for (Ad ad : newAds)
-			for (String neg : negativeKeywords)
-				if (ad.getTitle().toLowerCase().contains(neg.toLowerCase()))
-					newAds.remove(ad);
 	}
 
 	//given the html code for a Craigslist RSS page, creates and returns an ArrayList containing Ads created from the html code
@@ -142,7 +96,7 @@ public final class CraigslistNotifier {
 			if (html.contains("&#x0024;"))
 				price = Integer.parseInt(html.substring(html.indexOf("&#x0024;") + 8, html.indexOf("]]></title>")));
 			else price = 0;
-			temp = new Ad(title, price, date, location, link, cityy, body);
+			temp = new Ad(title, price, date, location, link, body);
 			System.out.println(temp);
 			result.add(temp);
 		}
@@ -159,8 +113,22 @@ public final class CraigslistNotifier {
 			ads.remove(ad);
 	}
 
-	public static void loadSettings() throws FileNotFoundException {
-		Scanner sc = new Scanner(new File("settings.txt"));
+	public static void loadSettings() {
+		Scanner sc = null;
+		try {
+			sc = new Scanner(new File("settings.txt"));
+		}
+		catch (FileNotFoundException e) {
+			try {
+				String n = System.getProperty("line.separator");
+				FileUtils.writeStringToFile(new File("settings.txt"), "Gmail account to send emails from:" + n + "email address: " + n + "password: " + n + "You must enable less secure apps to access your account; do so here:" + n + "https://www.google.com/settings/security/lesssecureapps" + n + n + "recipient's email address: " + n + n + "cities to search; ensure the city actually has its own craigslist (i.e. <city>.craigslist.org is a valid url)" + n + "put each entry on its own line:" + n + n + n + "search terms; put each entry on its own line:" + n + n + n + "negative keywords; if the ad's title contains any of the given keywords, you will not receive an email notification for that ad" + n + "put each entry on its own line:" + n + n + n + "how often to check listings, in minutes: ");
+			}
+			catch (IOException i) {
+				System.out.println("IOException while loading settings.txt");
+			}
+			JOptionPane.showMessageDialog(null, "This is your first time running the app.\nPlease fill out the settings.txt file that has been\ncreated in the directory that this app resides in.\nThen launch the app again.");
+			System.exit(0);
+		}
 		String text = sc.next();
 		while (!text.equals("address:"))
 			text = sc.next();
@@ -197,30 +165,40 @@ public final class CraigslistNotifier {
 		sc.close();
 	}
 
-	public static void loadAds() throws IOException {
-		ObjectInputStream ois = new ObjectInputStream(new FileInputStream("savedAds.txt"));
-		boolean end = false;
-		while (!end) {
-			try {
-				ads.add((Ad)ois.readObject());
+	public static void loadAds() {
+		try {
+			ObjectInputStream ois = new ObjectInputStream(new FileInputStream("savedAds.txt"));
+			boolean end = false;
+			while (!end) {
+				try {
+					ads.add((Ad)ois.readObject());
+				}
+				catch (IOException e) {
+					end = true;
+				}
+				catch (ClassNotFoundException e) {
+					System.out.println("ClassNotFoundException");
+				}
 			}
-			catch (IOException e) {
-				end = true;
-			}
-			catch (ClassNotFoundException e) {
-				System.out.println("ClassNotFoundException");
-			}
+			ois.close();
 		}
-		ois.close();
+		catch (IOException e) {
+			System.out.println("IOException while loading settings");
+		}
 	}
 
-	public static void saveAds() throws IOException {
-		ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("savedAds.txt"));
-		for (Ad ad : ads)
-			oos.writeObject(ad);
-		oos.close();
+	public static void saveAds() {
+		try {
+			ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("savedAds.txt"));
+			for (Ad ad : ads)
+				oos.writeObject(ad);
+			oos.close();
+		}
+		catch (IOException e) {
+			System.out.println("IOException while saving");
+		}
 	}
-	
+
 	public static void sendEmail(String subject, String body) {
 		try {
 			GoogleMail.Send(email, password, recipient, subject, body);
@@ -229,21 +207,5 @@ public final class CraigslistNotifier {
 		}
 		catch (MessagingException e) {
 		}
-	}
-
-	public static ArrayList<Ad> getAds() {
-		return ads;
-	}
-
-	public static ArrayList<Ad> getNewAds() {
-		return newAds;
-	}
-
-	public static ArrayList<String> getTerms() {
-		return searchTerms;
-	}
-
-	public static ArrayList<String> getCities() {
-		return cities;
 	}
 }
