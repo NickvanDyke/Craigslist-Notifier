@@ -54,10 +54,6 @@ public final class CraigslistNotifier {
 		}
 	}
 
-	public static void createSettings() {
-
-	}
-
 	public static void setEmail(String str) {
 		email = str;
 	}
