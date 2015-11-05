@@ -5,12 +5,12 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class Ad implements Serializable {
-	private String title, location, link, body;
+	private String title, location, link;
 	private int price;
 	private Date date;
-	private static DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss");
+	private static DateFormat df = new SimpleDateFormat("EEE dd MMM hh:mm:ss a");
 
-	public Ad(String title, int price, String date, String location, String link, String body) {
+	public Ad(String title, int price, String date, String location, String link) {
 		this.title = title;
 		this.price = price;
 		try {
@@ -21,7 +21,6 @@ public class Ad implements Serializable {
 		}
 		this.location = location;
 		this.link = link;
-		this.body = body;
 	}
 
 	public String toString() {
@@ -34,10 +33,6 @@ public class Ad implements Serializable {
 
 	public String getTitle() {
 		return title;
-	}
-	
-	public String getBody() {
-		return body;
 	}
 
 	public int getPrice() {

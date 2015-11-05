@@ -22,7 +22,7 @@ public final class CraigslistNotifier {
 				for (String term : searchTerms) {
 					updateAds(city, term);
 					for (Ad ad : newAds)
-						CraigslistNotifier.sendEmail(ad.getTitle(), "$" + ad.getPrice() + " - " + ad.getBody() + "\n" + ad.getLink());
+						sendEmail(ad.getTitle(), "$" + ad.getPrice() + " in " + ad.getLocation() + "\n" + ad.getLink());
 					saveAds();
 					try {
 						Thread.sleep((long)(((frequency + Math.random()) * 60000) / (searchTerms.size() * cities.size())));
@@ -35,19 +35,19 @@ public final class CraigslistNotifier {
 	}
 
 	public static void updateAds(String city, String term) {
-		String htm = "";
+		String html = "";
 		boolean skip, add;
 		newAds.clear();
 		System.out.println(term.replace("%20", " ") + " " + city);
 		try {
-			htm = Scraper.getHtml("https://" + city + ".craigslist.org/search/sss?format=rss&query=" + term + "&sort=rel");
+			html = Scraper.getHtml("http://" + city + ".craigslist.org/search/sss?sort=date&query=" + term);
 		}
 		catch (IOException e) {
 			sendEmail("IP blocked", "rip");
 			System.out.print("ip blocked");
 			System.exit(0);
 		}
-		for (Ad temp : createAds(htm)) {
+		for (Ad temp : createAds(html)) {
 			skip = false;
 			add = true;
 			if (ads.isEmpty()) {
@@ -70,33 +70,29 @@ public final class CraigslistNotifier {
 		}
 	}
 
-	//given the html code for a Craigslist RSS page, creates and returns an ArrayList containing Ads created from the html code
+	//given the html code for a Craigslist page, creates and returns an ArrayList containing Ads created from the html code
 	public static ArrayList<Ad> createAds(String str) {
 		ArrayList<Ad> result = new ArrayList<Ad>();
-		Ad temp;
-		if (str.indexOf("<rdf:Seq>") + 10 == str.indexOf("</rdf:Seq>")) {
+		if (str.contains("noresults")) {
 			System.out.println("no results");
 			return result;
 		}
-		String title, date, location, link, body;
+		Ad temp;
+		String title, date, location = "n/a", link;
+		String[] splitHtml;
 		int price = 0;
-		String[] htm =  str.substring(str.indexOf("<item rdf"), str.lastIndexOf("</item>")).split("</item>");
-		for (String html : htm) {
-			if (html.contains("(") && html.indexOf("(") - 1 > html.indexOf("<title><![CDATA[") + 16 && html.indexOf("(") < html.indexOf("]]></title>"))
-				title = html.substring(html.indexOf("<title><![CDATA[") + 16, html.indexOf("(") - 1);
-			else if (html.contains("&#x0024;"))
-				title = html.substring(html.indexOf("<title><![CDATA[") + 16, html.indexOf("&#x0024;") - 1);
-			else title = html.substring(html.indexOf("<title><![CDATA[") + 16, html.indexOf("]]></title>"));
-			body = html.substring(html.indexOf("<description><![CDATA[") + 22, html.indexOf("]]></description>"));
-			date = html.substring(html.indexOf("<dc:date>") + 9, html.indexOf("</dc:date>"));
-			if (html.contains("(") && html.contains(")") && html.lastIndexOf("(") < html.lastIndexOf(")"))
-				location = html.substring(html.lastIndexOf("(") + 1, html.lastIndexOf(")"));
-			else location = "N/A";
-			link = html.substring(html.indexOf("<link>") + 6, html.indexOf("</link>"));
-			if (html.contains("&#x0024;"))
-				price = Integer.parseInt(html.substring(html.indexOf("&#x0024;") + 8, html.indexOf("]]></title>")));
-			else price = 0;
-			temp = new Ad(title, price, date, location, link, body);
+		if (str.contains("<h4"))
+			splitHtml =  str.substring(str.indexOf("<p"), str.indexOf("<h4")).split("</p>");		
+		else splitHtml = str.substring(str.indexOf("<p"), str.indexOf("<div id=\"mapcontainer")).split("</p>");
+		for (String adHtml : splitHtml) {
+			title = adHtml.substring(adHtml.indexOf("hdrlnk") + 8, adHtml.indexOf("</a> </span>"));
+			date = adHtml.substring(adHtml.indexOf("title") + 7, adHtml.indexOf("title") + 29);
+			if (adHtml.contains("<small>"))
+				location = adHtml.substring(adHtml.indexOf("<small>") + 9, adHtml.indexOf("</small>") - 1);
+			link = adHtml.substring(adHtml.indexOf("href") + 6, adHtml.indexOf("html") + 4);
+			if (adHtml.contains("price"))
+				price = Integer.parseInt(adHtml.substring(adHtml.indexOf("price") + 8, adHtml.indexOf("</span")));		
+			temp = new Ad(title, price, date, location, link);
 			System.out.println(temp);
 			result.add(temp);
 		}
