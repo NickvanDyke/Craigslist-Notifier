@@ -33,14 +33,6 @@ public final class CraigslistNotifier {
 		}
 		while (true) {
 			Craigslist.updateAds();
-			try {
-				Craigslist.saveAds();
-			}
-			catch (IOException e) {
-				System.out.println("IOException while saving");
-			}
-			for (Ad ad : Craigslist.getNewAds())
-				sendEmail(ad.getTitle(), "$" + ad.getPrice() + " - " + ad.getBody() + "\n" + ad.getLink());
 		}
 	}
 

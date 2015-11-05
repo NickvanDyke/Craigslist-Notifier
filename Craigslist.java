@@ -12,20 +12,14 @@ public final class Craigslist {
 	private static String cityy;
 	private static double frequency;
 
-	public static String[] splitLocalListingsHtml(String html) {
-		if (html.contains("<h4"))
-			return html.substring(html.indexOf("<p"), html.indexOf("<h4")).split("</p>");
-		return html.substring(html.indexOf("<p"), html.lastIndexOf("<div id=\"mapcontainer")).split("</p>");
-	}
-
 	public static void updateAds() {
 		Ad match = null;
 		String htm = "";
 		int result = -2;
-		newAds.clear();
 		for (String city : cities) {
 			cityy = city;
 			for (String term : searchTerms) {
+				newAds.clear();
 				System.out.println(term.replace("%20", " ") + " " + city);
 				try {
 					htm = Scraper.getHtml("https://" + city + ".craigslist.org/search/sss?format=rss&query=" + term + "&sort=rel");
@@ -37,7 +31,6 @@ public final class Craigslist {
 				}
 				//System.out.println(htm);
 				for (Ad temp : createAds(htm)) {
-					System.out.println(temp);
 					if (ads.isEmpty()) {
 						ads.add(temp);
 						newAds.add(temp);
@@ -65,13 +58,19 @@ public final class Craigslist {
 					default: break;
 					}
 				}
+				for (Ad ad : newAds)
+					CraigslistNotifier.sendEmail(ad.getTitle(), "$" + ad.getPrice() + " - " + ad.getBody() + "\n" + ad.getLink());
 				try {
+					saveAds();
 					System.out.println("sleeping");
 					Thread.sleep((long)(((frequency + Math.random()) * 60000) / (searchTerms.size() * cities.size())));
 					System.out.println("resuming");
 				}
 				catch (InterruptedException e) {
 					System.out.println("InterruptedException");
+				}
+				catch (IOException e) {
+					System.out.println("IOException while saving");
 				}
 			}
 		}
@@ -89,7 +88,7 @@ public final class Craigslist {
 	public static ArrayList<Ad> createAds(String str) {
 		ArrayList<Ad> result = new ArrayList<Ad>();
 		Ad temp;
-		if (str.contains("<rdf:Seq>\n </rdf:Seq>")) {
+		if (str.indexOf("<rdf:Seq>") + 10 == str.indexOf("</rdf:Seq>")) {
 			System.out.println("no results");
 			return result;
 		}
@@ -97,15 +96,22 @@ public final class Craigslist {
 		int price = 0;
 		String[] htm =  str.substring(str.indexOf("<item rdf"), str.lastIndexOf("</item>")).split("</item>");
 		for (String html : htm) {
-			title = html.substring(html.indexOf("<title><![CDATA[") + 16, html.indexOf("(") - 1);
+			if (html.contains("(") && html.indexOf("(") - 1 > html.indexOf("<title><![CDATA[") + 16 && html.indexOf("(") < html.indexOf("]]></title>"))
+				title = html.substring(html.indexOf("<title><![CDATA[") + 16, html.indexOf("(") - 1);
+			else if (html.contains("&#x0024;"))
+				title = html.substring(html.indexOf("<title><![CDATA[") + 16, html.indexOf("&#x0024;") - 1);
+			else title = html.substring(html.indexOf("<title><![CDATA[") + 16, html.indexOf("]]></title>"));
 			body = html.substring(html.indexOf("<description><![CDATA[") + 22, html.indexOf("]]></description>"));
 			date = html.substring(html.indexOf("<dc:date>") + 9, html.indexOf("</dc:date>"));
-			location = html.substring(html.indexOf("(") + 1, html.indexOf(")"));
+			if (html.contains("(") && html.contains(")") && html.lastIndexOf("(") < html.lastIndexOf(")"))
+				location = html.substring(html.lastIndexOf("(") + 1, html.lastIndexOf(")"));
+			else location = "N/A";
 			link = html.substring(html.indexOf("<link>") + 6, html.indexOf("</link>"));
 			if (html.contains("&#x0024;"))
 				price = Integer.parseInt(html.substring(html.indexOf("&#x0024;") + 8, html.indexOf("]]></title>")));
 			else price = 0;
 			temp = new Ad(title, price, date, location, link, cityy, body);
+			System.out.println(temp);
 			result.add(temp);
 		}
 		return result;
