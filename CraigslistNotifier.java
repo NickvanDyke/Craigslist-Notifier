@@ -1,11 +1,13 @@
 import java.io.*;
+import java.awt.*;
+import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.Scanner;
+import javax.imageio.ImageIO;
 import javax.mail.MessagingException;
 import javax.mail.internet.AddressException;
 import javax.swing.JOptionPane;
 import org.apache.commons.io.FileUtils;
-
 import java.util.Date;
 
 public final class CraigslistNotifier {
@@ -15,6 +17,7 @@ public final class CraigslistNotifier {
 	private static double frequency;
 
 	public static void main(String[] args) {
+		createSystemTrayIcon();
 		loadSettings();
 		loadAds();
 		while (true) {
@@ -32,6 +35,51 @@ public final class CraigslistNotifier {
 					}
 				}
 		}
+	}
+
+	public static void createSystemTrayIcon() {
+		if (!SystemTray.isSupported()) {
+			System.out.println("SystemTray is not supported");
+			return;
+		}
+		TrayIcon trayIcon = null;
+		final PopupMenu popup = new PopupMenu();
+		final SystemTray tray = SystemTray.getSystemTray();
+		try {
+			trayIcon = new TrayIcon(ImageIO.read(new File("icon.png")), "Nick's Notifier");
+		}
+		catch (IOException e) {
+			System.out.println("icon.png not found");
+		}
+		MenuItem settingsItem = new MenuItem("Settings");
+		MenuItem exitItem = new MenuItem("Exit");
+		popup.add(settingsItem);
+		popup.add(exitItem);
+		trayIcon.setImageAutoSize(true);
+		trayIcon.setPopupMenu(popup);
+		try {
+			tray.add(trayIcon);
+		}
+		catch (AWTException e) {
+			System.out.println("TrayIcon could not be added.");
+		}
+		settingsItem.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if (Desktop.isDesktopSupported()) {
+					try {
+						Desktop.getDesktop().edit(new File("settings.txt"));
+					}
+					catch (IOException i) {
+						System.out.println("IOException while opening settings");
+					}
+				}
+			}
+		});
+		exitItem.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				System.exit(0);
+			}
+		});
 	}
 
 	public static void updateAds(String city, String term) {
