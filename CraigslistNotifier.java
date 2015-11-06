@@ -1,6 +1,8 @@
 import java.io.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Scanner;
 import javax.imageio.ImageIO;
@@ -53,6 +55,9 @@ public final class CraigslistNotifier {
 		}
 		MenuItem settingsItem = new MenuItem("Settings");
 		MenuItem exitItem = new MenuItem("Exit");
+		MenuItem donateItem = new MenuItem("Donate");
+		popup.add(donateItem);
+		popup.addSeparator();
 		popup.add(settingsItem);
 		popup.add(exitItem);
 		trayIcon.setImageAutoSize(true);
@@ -78,6 +83,21 @@ public final class CraigslistNotifier {
 		exitItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				System.exit(0);
+			}
+		});
+		donateItem.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if(Desktop.isDesktopSupported()) {
+					try {
+						Desktop.getDesktop().browse(new URI("https://www.paypal.me/NicholasVanDyke"));
+					}
+					catch (IOException i) {
+						System.out.println("IOException while opening webpage");
+					}
+					catch (URISyntaxException u) {
+						System.out.println("URISyntaxException while opening webpage");
+					}
+				}
 			}
 		});
 	}
