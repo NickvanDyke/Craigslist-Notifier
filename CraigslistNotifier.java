@@ -1,6 +1,7 @@
 import java.io.*;
 import java.awt.*;
 import java.awt.event.*;
+import javax.swing.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -8,7 +9,6 @@ import java.util.Scanner;
 import javax.imageio.ImageIO;
 import javax.mail.MessagingException;
 import javax.mail.internet.AddressException;
-import javax.swing.JOptionPane;
 import org.apache.commons.io.FileUtils;
 import java.util.Date;
 
@@ -17,15 +17,17 @@ public final class CraigslistNotifier {
 	private static ArrayList<String> searchTerms = new ArrayList<String>(), cities = new ArrayList<String>(), negativeKeywords = new ArrayList<String>();
 	private static String email, password, recipient;
 	private static double frequency;
+	private static JFrame f = new JFrame("Settings");
 
 	public static void main(String[] args) {
 		createSystemTrayIcon();
+		constructSettingsGUI();
 		loadSettings();
 		loadAds();
 		while (true) {
 			for (String city : cities)
 				for (String term : searchTerms) {
-					updateAds(city, term);
+					//updateAds(city, term);
 					for (Ad ad : newAds)
 						sendEmail(ad.getTitle(), "$" + ad.getPrice() + " in " + ad.getLocation() + "\n" + ad.getLink());
 					saveAds();
@@ -37,6 +39,93 @@ public final class CraigslistNotifier {
 					}
 				}
 		}
+	}
+	
+	public static void constructSettingsGUI() {
+		Container p = f.getContentPane();
+		f.setLayout(null);
+		f.addWindowListener(new WindowAdapter() {
+			public void windowClosing(WindowEvent windowEvent) {
+				
+			}
+		});
+		JLabel labelEmailInstructions = new JLabel("Gmail account to send emails from");
+		JLabel labelEmail = new JLabel("address:");
+		JLabel labelPassword = new JLabel("password:");
+		JLabel labelLink = new JLabel("<html>You must enable less secure apps<br>to access your account; do so <a href=\"\">" + "here" + "</a></html>");
+		labelLink.setCursor(new Cursor(Cursor.HAND_CURSOR));
+		labelLink.addMouseListener(new MouseAdapter() {
+			public void mouseClicked(MouseEvent e) {
+				try {
+					Desktop.getDesktop().browse(new URI("https://www.google.com/settings/security/lesssecureapps"));
+				}
+				catch (IOException i) {
+					System.out.println("IOException while opening webpage");
+				}
+				catch (URISyntaxException u) {
+					System.out.println("URISyntaxException");
+				}
+			}
+		});
+		JLabel labelRecipient = new JLabel("recipient:");
+		JLabel labelCities = new JLabel("cities to search:");
+		JLabel labelTerms = new JLabel("search terms:");
+		JLabel labelRefresh = new JLabel("refresh search results every               minutes");
+		JTextField email = new JTextField("example@gmail.com", 13);
+		JTextField recipient = new JTextField("example@gmail.com", 13);
+		JTextField cities = new JTextField("ensure <city>.craigslist.org is a valid url; separate entries with a comma and space", 41);
+		JTextField terms = new JTextField("separate entries with a comma and space", 42);
+		JTextField refresh = new JTextField("20", 3);
+		JPasswordField password = new JPasswordField(12);
+		//add elements to container
+		p.add(labelEmailInstructions);
+		p.add(labelEmail);
+		p.add(labelPassword);
+		p.add(labelLink);
+		p.add(labelRecipient);
+		p.add(labelCities);
+		p.add(labelTerms);
+		p.add(labelRefresh);
+		p.add(email);
+		p.add(password);
+		p.add(recipient);
+		p.add(cities);
+		p.add(terms);
+		p.add(refresh);
+		Insets insets = f.getInsets();
+		//position labels
+		Dimension size = labelEmail.getPreferredSize();
+		labelEmailInstructions.setBounds(5 + insets.left, 1 + insets.top, 300, size.height);
+		size = labelEmail.getPreferredSize();
+		labelEmail.setBounds(5 + insets.left, 22 + insets.top, size.width, size.height);
+		size = labelPassword.getPreferredSize();
+		labelPassword.setBounds(5 + insets.left, 43 + insets.top, size.width, size.height);
+		size = labelLink.getPreferredSize();
+		labelLink.setBounds(5 + insets.left, 62 + insets.top, size.width, size.height);
+		size = labelRecipient.getPreferredSize();
+		labelRecipient.setBounds(5 + insets.left, 101 + insets.top, size.width, size.height);
+		size = labelCities.getPreferredSize();
+		labelCities.setBounds(5 + insets.left, 122 + insets.top, size.width, size.height);
+		size = labelTerms.getPreferredSize();
+		labelTerms.setBounds(5 + insets.left, 143 + insets.top, size.width, size.height);
+		size = labelRefresh.getPreferredSize();
+		labelRefresh.setBounds(5 + insets.left, 164 + insets.top, size.width, size.height);
+		//position text boxes
+		size = email.getPreferredSize();
+		email.setBounds(59 + insets.left, 20 + insets.top, size.width, size.height);
+		size = password.getPreferredSize();
+		password.setBounds(70 + insets.left, 41 + insets.top, size.width, size.height);
+		size = recipient.getPreferredSize();
+		recipient.setBounds(59 + insets.left, 99 + insets.top, size.width, size.height);
+		size = cities.getPreferredSize();
+		cities.setBounds(100 + insets.left, 120 + insets.top, size.width, size.height);
+		size = terms.getPreferredSize();
+		terms.setBounds(89 + insets.left, 141 + insets.top, size.width, size.height);
+		size = refresh.getPreferredSize();
+		refresh.setBounds(172 + insets.left, 162 + insets.top, size.width, size.height);
+		f.setSize(576, 225);
+		f.setResizable(false);
+		f.setLocationRelativeTo(null);
 	}
 
 	public static void createSystemTrayIcon() {
@@ -53,9 +142,9 @@ public final class CraigslistNotifier {
 		catch (IOException e) {
 			System.out.println("icon.png not found");
 		}
+		MenuItem donateItem = new MenuItem("Donate");
 		MenuItem settingsItem = new MenuItem("Settings");
 		MenuItem exitItem = new MenuItem("Exit");
-		MenuItem donateItem = new MenuItem("Donate");
 		popup.add(donateItem);
 		popup.addSeparator();
 		popup.add(settingsItem);
@@ -66,25 +155,8 @@ public final class CraigslistNotifier {
 			tray.add(trayIcon);
 		}
 		catch (AWTException e) {
-			System.out.println("TrayIcon could not be added.");
+			System.out.println("TrayIcon could not be added");
 		}
-		settingsItem.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				if (Desktop.isDesktopSupported()) {
-					try {
-						Desktop.getDesktop().edit(new File("settings.txt"));
-					}
-					catch (IOException i) {
-						System.out.println("IOException while opening settings");
-					}
-				}
-			}
-		});
-		exitItem.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				System.exit(0);
-			}
-		});
 		donateItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if(Desktop.isDesktopSupported()) {
@@ -98,6 +170,16 @@ public final class CraigslistNotifier {
 						System.out.println("URISyntaxException while opening webpage");
 					}
 				}
+			}
+		});
+		settingsItem.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				f.setVisible(true);
+			}
+		});
+		exitItem.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				System.exit(0);
 			}
 		});
 	}
@@ -152,7 +234,7 @@ public final class CraigslistNotifier {
 		city = str.substring(str.indexOf("<option value=\"") + 15, str.indexOf("</option>"));
 		city = city.substring(0, city.indexOf("\">"));
 		if (str.contains("<h4"))
-			splitHtml =  str.substring(str.indexOf("<p"), str.indexOf("<h4")).split("</p>");		
+			splitHtml =  str.substring(str.indexOf("<p"), str.indexOf("<h4")).split("</p>");
 		else splitHtml = str.substring(str.indexOf("<p"), str.indexOf("<div id=\"mapcontainer")).split("</p>");
 		for (String adHtml : splitHtml) {
 			title = adHtml.substring(adHtml.indexOf("hdrlnk") + 8, adHtml.indexOf("</a> </span>"));
