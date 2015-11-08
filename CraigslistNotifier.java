@@ -10,6 +10,8 @@ import javax.imageio.ImageIO;
 import javax.mail.MessagingException;
 import javax.mail.internet.AddressException;
 import org.apache.commons.io.FileUtils;
+import org.jasypt.util.text.BasicTextEncryptor;
+
 import java.util.Date;
 
 public final class CraigslistNotifier {
@@ -40,15 +42,10 @@ public final class CraigslistNotifier {
 				}
 		}
 	}
-	
+
 	public static void constructSettingsGUI() {
 		Container p = f.getContentPane();
 		f.setLayout(null);
-		f.addWindowListener(new WindowAdapter() {
-			public void windowClosing(WindowEvent windowEvent) {
-				
-			}
-		});
 		JLabel labelEmailInstructions = new JLabel("Gmail account to send emails from");
 		JLabel labelEmail = new JLabel("address:");
 		JLabel labelPassword = new JLabel("password:");
@@ -123,6 +120,26 @@ public final class CraigslistNotifier {
 		terms.setBounds(89 + insets.left, 141 + insets.top, size.width, size.height);
 		size = refresh.getPreferredSize();
 		refresh.setBounds(172 + insets.left, 162 + insets.top, size.width, size.height);
+		f.addWindowListener(new WindowAdapter() {
+			public void windowClosing(WindowEvent windowEvent) {
+				String n = System.getProperty("line.separator");
+				try {
+					BufferedWriter w = new BufferedWriter(new FileWriter(new File("settingsTest.txt")));
+					BasicTextEncryptor textEncryptor = new BasicTextEncryptor();
+					textEncryptor.setPassword("Nick");
+					w.write(email.getText() + n);
+					w.write(textEncryptor.encrypt(password.getText()) + n);
+					w.write(recipient.getText() + n);
+					w.write(cities.getText() + n);
+					w.write(terms.getText() + n);
+					w.write(refresh.getText());
+					w.close();
+				}
+				catch (IOException e) {
+					System.out.println("Error writing settings to file");
+				}
+			}
+		});
 		f.setSize(576, 225);
 		f.setResizable(false);
 		f.setLocationRelativeTo(null);
