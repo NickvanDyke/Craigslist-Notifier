@@ -69,13 +69,13 @@ public final class CraigslistNotifier {
 				for (int t = 0; t < searchTerms.size(); t++) {
 					if (settingsChanged)
 						break start;
-					//updateAds(cities.get(c), searchTerms.get(t));
+					updateAds(cities.get(c), searchTerms.get(t));
 					System.out.println(cities.get(c) + " " + searchTerms.get(t));
 					for (Ad ad : newAds)
 						sendEmail(ad.getTitle(), "$" + ad.getPrice() + " in " + ad.getLocation() + "\n" + ad.getLink());
 					saveAds();
 					try {
-						Thread.sleep(3000);//(long)(((frequency + Math.random()) * 60000) / (searchTerms.size() * cities.size())));
+						Thread.sleep((long)(((frequency + Math.random()) * 60000) / (searchTerms.size() * cities.size())));
 					}
 					catch (InterruptedException e) {
 						System.out.println("InterruptedException");
@@ -202,7 +202,7 @@ public final class CraigslistNotifier {
 			public void windowClosing(WindowEvent windowEvent) {
 				String n = System.getProperty("line.separator");
 				try {
-					BufferedWriter w = new BufferedWriter(new FileWriter(new File("settingsTest.txt")));
+					BufferedWriter w = new BufferedWriter(new FileWriter(new File("settings.txt")));
 					w.write(tEmail.getText() + n);
 					w.write(textEncryptor.encrypt(tPassword.getText()) + n);
 					w.write(tRecipient.getText() + n);
@@ -233,11 +233,11 @@ public final class CraigslistNotifier {
 		BasicTextEncryptor textEncryptor = new BasicTextEncryptor();
 		textEncryptor.setPassword("Nick");
 		try {
-			lines = new Scanner(new File("settingsTest.txt"));
+			lines = new Scanner(new File("settings.txt"));
 		}
 		catch (FileNotFoundException e) {
 			try {
-				BufferedWriter w = new BufferedWriter(new FileWriter(new File("settingsTest.txt")));
+				BufferedWriter w = new BufferedWriter(new FileWriter(new File("settings.txt")));
 				String n = System.getProperty("line.separator");
 				w.write("example@gmail.com" + n + n);
 				w.write("example@gmail.com" + n);
@@ -246,7 +246,7 @@ public final class CraigslistNotifier {
 				w.write("separate entries with a comma and space" + n);
 				w.write("20");
 				w.close();
-				lines = new Scanner(new File("settingsTest.txt"));
+				lines = new Scanner(new File("settings.txt"));
 			}
 			catch (IOException i) {
 				System.out.println("IOException creating settings.txt");
