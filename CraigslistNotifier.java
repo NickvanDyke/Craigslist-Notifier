@@ -19,7 +19,7 @@ public final class CraigslistNotifier {
 	private static String email, password, recipient;
 	private static int frequency;
 	private static JFrame f = new JFrame("Settings");
-	private static boolean firstTime;
+	private static boolean firstTime, settingsChanged;
 
 	public static void main(String[] args) {
 		createSystemTrayIcon();
@@ -63,8 +63,12 @@ public final class CraigslistNotifier {
 			}
 		}
 		while (true) {
+			settingsChanged = false;
+			start:
 			for (int c = 0; c < cities.size(); c++)
 				for (int t = 0; t < searchTerms.size(); t++) {
+					if (settingsChanged)
+						break start;
 					//updateAds(cities.get(c), searchTerms.get(t));
 					System.out.println(cities.get(c) + " " + searchTerms.get(t));
 					for (Ad ad : newAds)
@@ -109,6 +113,7 @@ public final class CraigslistNotifier {
 		JLabel lTerms = new JLabel("search terms:");
 		JLabel lNeg = new JLabel("negative keywords:");
 		JLabel lRefresh = new JLabel("refresh search results every               minutes");
+		JLabel lInfo = new JLabel("Hover over labels for more info");
 		//load text fields
 		for (int i = 0; i < cities.size(); i++) {
 			sCities += cities.get(i);
@@ -132,6 +137,12 @@ public final class CraigslistNotifier {
 		JTextField tNeg = new JTextField(sNegs, 39);
 		JTextField tRefresh = new JTextField(Integer.toString(frequency), 3);
 		JPasswordField tPassword = new JPasswordField(password, 12);
+		lEmail.setToolTipText("Gmail address to send emails from");
+		lRecipient.setToolTipText("Email address to send emails to; doesn't have to be a Gmail address");
+		lCities.setToolTipText("ensure <city>.craigslist.org is a valid url; separate multiple entries with a comma and space");
+		lTerms.setToolTipText("separate multiple entries with a comma and space");
+		lNeg.setToolTipText("if an ad's title contains any negative keyword, you will not be notified of it; separate multiple entries with a comma and space");
+		lPassword.setToolTipText("password for the Gmail account that emails are sent from; it is encrypted before being stored, and is used for nothing else than sending emails");
 		//add elements to container
 		p.add(lEmailInstructions);
 		p.add(lEmail);
@@ -142,6 +153,7 @@ public final class CraigslistNotifier {
 		p.add(lTerms);
 		p.add(lNeg);
 		p.add(lRefresh);
+		p.add(lInfo);
 		p.add(tEmail);
 		p.add(tPassword);
 		p.add(tRecipient);
@@ -151,7 +163,7 @@ public final class CraigslistNotifier {
 		p.add(tRefresh);
 		Insets insets = f.getInsets();
 		//position labels
-		Dimension size = lEmail.getPreferredSize();
+		Dimension size = lEmailInstructions.getPreferredSize();
 		lEmailInstructions.setBounds(5 + insets.left, 1 + insets.top, 300, size.height);
 		size = lEmail.getPreferredSize();
 		lEmail.setBounds(5 + insets.left, 22 + insets.top, size.width, size.height);
@@ -169,6 +181,8 @@ public final class CraigslistNotifier {
 		lNeg.setBounds(5 + insets.left, 164 + insets.top, size.width, size.height);
 		size = lRefresh.getPreferredSize();
 		lRefresh.setBounds(5 + insets.left, 185 + insets.top, size.width, size.height);
+		size = lInfo.getPreferredSize();
+		lInfo.setBounds(380 + insets.left, 185 + insets.top, size.width, size.height);
 		//position text boxes
 		size = tEmail.getPreferredSize();
 		tEmail.setBounds(59 + insets.left, 20 + insets.top, size.width, size.height);
@@ -210,10 +224,12 @@ public final class CraigslistNotifier {
 	}
 
 	public static void loadSettings() {
+		ArrayList<String> st = new ArrayList<String>(searchTerms), c = new ArrayList<String>(cities), nk = new ArrayList<String>(negativeKeywords);
 		String text;
 		Scanner lines = null, tokens = null;
 		searchTerms.clear();
 		cities.clear();
+		negativeKeywords.clear();
 		BasicTextEncryptor textEncryptor = new BasicTextEncryptor();
 		textEncryptor.setPassword("Nick");
 		try {
@@ -271,6 +287,8 @@ public final class CraigslistNotifier {
 		tokens.close();
 		frequency = Integer.parseInt(lines.nextLine());
 		lines.close();
+		if (!st.equals(searchTerms) || !c.equals(cities) || !nk.equals(negativeKeywords))
+			settingsChanged = true;
 	}
 
 	public static void createSystemTrayIcon() {
@@ -383,7 +401,7 @@ public final class CraigslistNotifier {
 			splitHtml =  str.substring(str.indexOf("<p"), str.indexOf("<h4")).split("</p>");
 		else splitHtml = str.substring(str.indexOf("<p"), str.indexOf("<div id=\"mapcontainer")).split("</p>");
 		for (String adHtml : splitHtml) {
-			title = adHtml.substring(adHtml.indexOf("hdrlnk") + 8, adHtml.indexOf("</a> </span>"));
+			title = adHtml.substring(adHtml.indexOf("hdrlnk") + 8, adHtml.indexOf("</a> </span>")).replace("&amp;", "&");
 			date = adHtml.substring(adHtml.indexOf("title") + 7, adHtml.indexOf("title") + 29);
 			if (adHtml.contains("<small>"))
 				location = adHtml.substring(adHtml.indexOf("<small>") + 9, adHtml.indexOf("</small>") - 1);
