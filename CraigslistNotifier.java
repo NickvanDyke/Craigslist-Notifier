@@ -9,7 +9,6 @@ import java.util.Scanner;
 import javax.imageio.ImageIO;
 import javax.mail.MessagingException;
 import javax.mail.internet.AddressException;
-import org.apache.commons.io.FileUtils;
 import org.jasypt.util.text.BasicTextEncryptor;
 
 import java.util.Date;
@@ -18,40 +17,81 @@ public final class CraigslistNotifier {
 	private static ArrayList<Ad> ads = new ArrayList<Ad>(), newAds = new ArrayList<Ad>();
 	private static ArrayList<String> searchTerms = new ArrayList<String>(), cities = new ArrayList<String>(), negativeKeywords = new ArrayList<String>();
 	private static String email, password, recipient;
-	private static double frequency;
+	private static int frequency;
 	private static JFrame f = new JFrame("Settings");
+	private static boolean firstTime;
 
 	public static void main(String[] args) {
 		createSystemTrayIcon();
-		constructSettingsGUI();
 		loadSettings();
+		constructSettingsGUI();
 		loadAds();
-		while (true) {
-			for (String city : cities)
-				for (String term : searchTerms) {
-					//updateAds(city, term);
-					for (Ad ad : newAds)
-						sendEmail(ad.getTitle(), "$" + ad.getPrice() + " in " + ad.getLocation() + "\n" + ad.getLink());
-					saveAds();
-					try {
-						Thread.sleep((long)(((frequency + Math.random()) * 60000) / (searchTerms.size() * cities.size())));
-					}
-					catch (InterruptedException e) {
-						System.out.println("InterruptedException");
+		if (firstTime) {
+			f.setVisible(true);
+			Object lock = new Object();
+			Thread t = new Thread() {
+				public void run() {
+					synchronized(lock) {
+						while (f.isVisible()) {
+							try {
+								lock.wait();
+							}
+							catch (InterruptedException e) {
+								e.printStackTrace();
+							}
+						}
+						loadSettings();
+						cities.remove(0);
+						searchTerms.remove(0);
 					}
 				}
+			};
+			t.start();
+			f.addWindowListener(new WindowAdapter() {
+				public void windowClosing(WindowEvent e) {
+					synchronized (lock) {
+						f.setVisible(false);
+						lock.notify();
+					}
+				}
+
+			});
+			try {
+				t.join();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 		}
+			while (true) {
+				for (int c = 0; c < cities.size(); c++)
+					for (int t = 0; t < searchTerms.size(); t++) {
+						updateAds(cities.get(c), searchTerms.get(t));
+						System.out.println(cities.get(c) + " " + searchTerms.get(t));
+						for (Ad ad : newAds)
+							sendEmail(ad.getTitle(), "$" + ad.getPrice() + " in " + ad.getLocation() + "\n" + ad.getLink());
+						saveAds();
+						try {
+							Thread.sleep((long)(((frequency + Math.random()) * 60000) / (searchTerms.size() * cities.size())));
+						}
+						catch (InterruptedException e) {
+							System.out.println("InterruptedException");
+						}
+					}
+			}
 	}
 
 	public static void constructSettingsGUI() {
+		String sCities = "", sTerms = "";
+		BasicTextEncryptor textEncryptor = new BasicTextEncryptor();
+		textEncryptor.setPassword("Nick");
 		Container p = f.getContentPane();
 		f.setLayout(null);
-		JLabel labelEmailInstructions = new JLabel("Gmail account to send emails from");
-		JLabel labelEmail = new JLabel("address:");
-		JLabel labelPassword = new JLabel("password:");
-		JLabel labelLink = new JLabel("<html>You must enable less secure apps<br>to access your account; do so <a href=\"\">" + "here" + "</a></html>");
-		labelLink.setCursor(new Cursor(Cursor.HAND_CURSOR));
-		labelLink.addMouseListener(new MouseAdapter() {
+		JLabel lEmailInstructions = new JLabel("Gmail account to send emails from");
+		JLabel lEmail = new JLabel("address:");
+		JLabel lPassword = new JLabel("password:");
+		JLabel lLink = new JLabel("<html>You must enable less secure apps<br>to access your account; do so <a href=\"\">here</a></html>");
+		lLink.setCursor(new Cursor(Cursor.HAND_CURSOR));
+		lLink.addMouseListener(new MouseAdapter() {
 			public void mouseClicked(MouseEvent e) {
 				try {
 					Desktop.getDesktop().browse(new URI("https://www.google.com/settings/security/lesssecureapps"));
@@ -64,85 +104,150 @@ public final class CraigslistNotifier {
 				}
 			}
 		});
-		JLabel labelRecipient = new JLabel("recipient:");
-		JLabel labelCities = new JLabel("cities to search:");
-		JLabel labelTerms = new JLabel("search terms:");
-		JLabel labelRefresh = new JLabel("refresh search results every               minutes");
-		JTextField email = new JTextField("example@gmail.com", 13);
-		JTextField recipient = new JTextField("example@gmail.com", 13);
-		JTextField cities = new JTextField("ensure <city>.craigslist.org is a valid url; separate entries with a comma and space", 41);
-		JTextField terms = new JTextField("separate entries with a comma and space", 42);
-		JTextField refresh = new JTextField("20", 3);
-		JPasswordField password = new JPasswordField(12);
+		JLabel lRecipient = new JLabel("recipient:");
+		JLabel lCities = new JLabel("cities to search:");
+		JLabel lTerms = new JLabel("search terms:");
+		JLabel lRefresh = new JLabel("refresh search results every               minutes");
+		//load text fields
+		for (int i = 0; i < cities.size(); i++) {
+			sCities += cities.get(i);
+			if (i < cities.size() - 1)
+				sCities += ", ";
+		}
+		for (int i = 0; i < searchTerms.size(); i++) {
+			sTerms += searchTerms.get(i);
+			if (i < searchTerms.size() - 1)
+				sTerms += ", ";
+		}
+		JTextField tEmail = new JTextField(CraigslistNotifier.email, 13);
+		JTextField tRecipient = new JTextField(recipient, 13);
+		JTextField tCities = new JTextField(sCities, 41);
+		JTextField tTerms = new JTextField(sTerms, 42);
+		JTextField tRefresh = new JTextField(Integer.toString(frequency), 3);
+		JPasswordField tPassword = new JPasswordField(password, 12);
 		//add elements to container
-		p.add(labelEmailInstructions);
-		p.add(labelEmail);
-		p.add(labelPassword);
-		p.add(labelLink);
-		p.add(labelRecipient);
-		p.add(labelCities);
-		p.add(labelTerms);
-		p.add(labelRefresh);
-		p.add(email);
-		p.add(password);
-		p.add(recipient);
-		p.add(cities);
-		p.add(terms);
-		p.add(refresh);
+		p.add(lEmailInstructions);
+		p.add(lEmail);
+		p.add(lPassword);
+		p.add(lLink);
+		p.add(lRecipient);
+		p.add(lCities);
+		p.add(lTerms);
+		p.add(lRefresh);
+		p.add(tEmail);
+		p.add(tPassword);
+		p.add(tRecipient);
+		p.add(tCities);
+		p.add(tTerms);
+		p.add(tRefresh);
 		Insets insets = f.getInsets();
 		//position labels
-		Dimension size = labelEmail.getPreferredSize();
-		labelEmailInstructions.setBounds(5 + insets.left, 1 + insets.top, 300, size.height);
-		size = labelEmail.getPreferredSize();
-		labelEmail.setBounds(5 + insets.left, 22 + insets.top, size.width, size.height);
-		size = labelPassword.getPreferredSize();
-		labelPassword.setBounds(5 + insets.left, 43 + insets.top, size.width, size.height);
-		size = labelLink.getPreferredSize();
-		labelLink.setBounds(5 + insets.left, 62 + insets.top, size.width, size.height);
-		size = labelRecipient.getPreferredSize();
-		labelRecipient.setBounds(5 + insets.left, 101 + insets.top, size.width, size.height);
-		size = labelCities.getPreferredSize();
-		labelCities.setBounds(5 + insets.left, 122 + insets.top, size.width, size.height);
-		size = labelTerms.getPreferredSize();
-		labelTerms.setBounds(5 + insets.left, 143 + insets.top, size.width, size.height);
-		size = labelRefresh.getPreferredSize();
-		labelRefresh.setBounds(5 + insets.left, 164 + insets.top, size.width, size.height);
+		Dimension size = lEmail.getPreferredSize();
+		lEmailInstructions.setBounds(5 + insets.left, 1 + insets.top, 300, size.height);
+		size = lEmail.getPreferredSize();
+		lEmail.setBounds(5 + insets.left, 22 + insets.top, size.width, size.height);
+		size = lPassword.getPreferredSize();
+		lPassword.setBounds(5 + insets.left, 43 + insets.top, size.width, size.height);
+		size = lLink.getPreferredSize();
+		lLink.setBounds(5 + insets.left, 62 + insets.top, size.width, size.height);
+		size = lRecipient.getPreferredSize();
+		lRecipient.setBounds(5 + insets.left, 101 + insets.top, size.width, size.height);
+		size = lCities.getPreferredSize();
+		lCities.setBounds(5 + insets.left, 122 + insets.top, size.width, size.height);
+		size = lTerms.getPreferredSize();
+		lTerms.setBounds(5 + insets.left, 143 + insets.top, size.width, size.height);
+		size = lRefresh.getPreferredSize();
+		lRefresh.setBounds(5 + insets.left, 164 + insets.top, size.width, size.height);
 		//position text boxes
-		size = email.getPreferredSize();
-		email.setBounds(59 + insets.left, 20 + insets.top, size.width, size.height);
-		size = password.getPreferredSize();
-		password.setBounds(70 + insets.left, 41 + insets.top, size.width, size.height);
-		size = recipient.getPreferredSize();
-		recipient.setBounds(59 + insets.left, 99 + insets.top, size.width, size.height);
-		size = cities.getPreferredSize();
-		cities.setBounds(100 + insets.left, 120 + insets.top, size.width, size.height);
-		size = terms.getPreferredSize();
-		terms.setBounds(89 + insets.left, 141 + insets.top, size.width, size.height);
-		size = refresh.getPreferredSize();
-		refresh.setBounds(172 + insets.left, 162 + insets.top, size.width, size.height);
+		size = tEmail.getPreferredSize();
+		tEmail.setBounds(59 + insets.left, 20 + insets.top, size.width, size.height);
+		size = tPassword.getPreferredSize();
+		tPassword.setBounds(70 + insets.left, 41 + insets.top, size.width, size.height);
+		size = tRecipient.getPreferredSize();
+		tRecipient.setBounds(59 + insets.left, 99 + insets.top, size.width, size.height);
+		size = tCities.getPreferredSize();
+		tCities.setBounds(100 + insets.left, 120 + insets.top, size.width, size.height);
+		size = tTerms.getPreferredSize();
+		tTerms.setBounds(89 + insets.left, 141 + insets.top, size.width, size.height);
+		size = tRefresh.getPreferredSize();
+		tRefresh.setBounds(172 + insets.left, 162 + insets.top, size.width, size.height);
 		f.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent windowEvent) {
 				String n = System.getProperty("line.separator");
 				try {
 					BufferedWriter w = new BufferedWriter(new FileWriter(new File("settingsTest.txt")));
-					BasicTextEncryptor textEncryptor = new BasicTextEncryptor();
-					textEncryptor.setPassword("Nick");
-					w.write(email.getText() + n);
-					w.write(textEncryptor.encrypt(password.getText()) + n);
-					w.write(recipient.getText() + n);
-					w.write(cities.getText() + n);
-					w.write(terms.getText() + n);
-					w.write(refresh.getText());
+					w.write(tEmail.getText() + n);
+					w.write(textEncryptor.encrypt(tPassword.getText()) + n);
+					w.write(tRecipient.getText() + n);
+					w.write(tCities.getText() + n);
+					w.write(tTerms.getText() + n);
+					w.write(tRefresh.getText());
 					w.close();
 				}
 				catch (IOException e) {
 					System.out.println("Error writing settings to file");
 				}
+				loadSettings();
 			}
 		});
 		f.setSize(576, 225);
-		f.setResizable(false);
+		f.setResizable(true);
 		f.setLocationRelativeTo(null);
+	}
+
+	public static void loadSettings() {
+		String text;
+		Scanner lines = null, tokens = null;
+		searchTerms.clear();
+		cities.clear();
+		BasicTextEncryptor textEncryptor = new BasicTextEncryptor();
+		textEncryptor.setPassword("Nick");
+		try {
+			lines = new Scanner(new File("settingsTest.txt"));
+		}
+		catch (FileNotFoundException e) {
+			try {
+				BufferedWriter w = new BufferedWriter(new FileWriter(new File("settingsTest.txt")));
+				String n = System.getProperty("line.separator");
+				w.write("example@gmail.com" + n + n);
+				w.write("example@gmail.com" + n);
+				w.write("ensure <city>.craigslist.org is a valid url; separate entries with a comma and space" + n);
+				w.write("separate entries with a comma and space" + n);
+				w.write("20");
+				w.close();
+				lines = new Scanner(new File("settingsTest.txt"));
+			}
+			catch (IOException i) {
+				System.out.println("IOException creating settings.txt");
+			}
+			JOptionPane.showMessageDialog(null, "This is your first time running the app. Please fill out the settings.");
+			firstTime = true;
+		}
+		email = lines.nextLine();
+		text = lines.nextLine();
+		if (text.length() > 0)
+			password = textEncryptor.decrypt(text);
+		else
+			password = "";
+		recipient = lines.nextLine();
+		tokens = new Scanner(lines.nextLine());
+		tokens.useDelimiter(", ");
+		while (tokens.hasNext()) {
+			text = tokens.next();
+			if (!cities.contains(text))
+				cities.add(text);
+		}
+		tokens.close();
+		tokens = new Scanner(lines.nextLine());
+		tokens.useDelimiter(", ");
+		while (tokens.hasNext()) {
+			text = tokens.next();
+			if (!searchTerms.contains(text))
+				searchTerms.add(text);
+		}
+		tokens.close();
+		frequency = Integer.parseInt(lines.nextLine());
+		lines.close();
 	}
 
 	public static void createSystemTrayIcon() {
@@ -215,6 +320,7 @@ public final class CraigslistNotifier {
 			System.exit(0);
 		}
 		for (Ad temp : createAds(html)) {
+			System.out.println(temp);
 			skip = false;
 			add = true;
 			if (ads.isEmpty()) {
@@ -262,7 +368,6 @@ public final class CraigslistNotifier {
 			if (adHtml.contains("price"))
 				price = Integer.parseInt(adHtml.substring(adHtml.indexOf("price") + 8, adHtml.indexOf("</span")));		
 			temp = new Ad(title, price, date, location, link);
-			System.out.println(temp);
 			result.add(temp);
 		}
 		return result;
@@ -276,58 +381,6 @@ public final class CraigslistNotifier {
 				adsToBeDeleted.add(ad);
 		for (Ad ad : adsToBeDeleted)
 			ads.remove(ad);
-	}
-
-	public static void loadSettings() {
-		Scanner sc = null;
-		try {
-			sc = new Scanner(new File("settings.txt"));
-		}
-		catch (FileNotFoundException e) {
-			try {
-				String n = System.getProperty("line.separator");
-				FileUtils.writeStringToFile(new File("settings.txt"), "Gmail account to send emails from" + n + "address: " + n + "password: " + n + "You must enable less secure apps to access your account; do so here:" + n + "https://www.google.com/settings/security/lesssecureapps" + n + n + "recipient's email address: " + n + n + "cities to search; ensure the city actually has its own craigslist (i.e. <city>.craigslist.org is a valid url)" + n + "put each entry on its own line:" + n + n + n + "search terms; put each entry on its own line:" + n + n + n + "negative keywords; if the ad's title contains any of the given keywords, you will not receive an email notification for that ad" + n + "put each entry on its own line:" + n + n + n + "how often to check listings, in minutes: ");
-			}
-			catch (IOException i) {
-				System.out.println("IOException while loading settings.txt");
-			}
-			JOptionPane.showMessageDialog(null, "This is your first time running the app.\nPlease fill out the settings.txt file that has been\ncreated in the directory that this app resides in.\nThen launch the app again.");
-			System.exit(0);
-		}
-		String text = sc.next();
-		while (!text.equals("address:"))
-			text = sc.next();
-		text = sc.next();
-		email = text.substring(0, text.indexOf("@"));
-		while (!text.equals("password:"))
-			text = sc.next();
-		password = sc.next();
-		while (!text.equals("address:"))
-			text = sc.next();
-		recipient = sc.next();
-		while (sc.hasNextLine() && !text.contains("cities to search"))
-			text = sc.nextLine();
-		sc.nextLine();
-		text = sc.nextLine();
-		while (sc.hasNextLine() && !text.contains("search terms; put each entry on its own line:")) {
-			if (text.length() > 1)
-				cities.add(text);
-			text = sc.nextLine();
-		}
-		text = sc.nextLine();
-		while (sc.hasNextLine() && !text.contains("negative keywords")) {
-			if (text.length() > 1)
-				searchTerms.add(text.replace(" ", "%20"));
-			text = sc.nextLine();
-		}
-		text = sc.nextLine();
-		while (sc.hasNextLine() && !text.contains("how often to check listings, in minutes: ")) {
-			if (text.length() > 1)
-				negativeKeywords.add(text);
-			text = sc.nextLine();
-		}
-		frequency = Integer.parseInt(text.substring(41)) - 0.5;
-		sc.close();
 	}
 
 	public static void loadAds() {
