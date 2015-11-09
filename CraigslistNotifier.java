@@ -41,8 +41,7 @@ public final class CraigslistNotifier {
 							}
 						}
 						loadSettings();
-						cities.remove(0);
-						searchTerms.remove(0);
+						
 					}
 				}
 			};
@@ -58,30 +57,31 @@ public final class CraigslistNotifier {
 			});
 			try {
 				t.join();
-			} catch (InterruptedException e) {
+			}
+			catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 		}
-			while (true) {
-				for (int c = 0; c < cities.size(); c++)
-					for (int t = 0; t < searchTerms.size(); t++) {
-						updateAds(cities.get(c), searchTerms.get(t));
-						System.out.println(cities.get(c) + " " + searchTerms.get(t));
-						for (Ad ad : newAds)
-							sendEmail(ad.getTitle(), "$" + ad.getPrice() + " in " + ad.getLocation() + "\n" + ad.getLink());
-						saveAds();
-						try {
-							Thread.sleep((long)(((frequency + Math.random()) * 60000) / (searchTerms.size() * cities.size())));
-						}
-						catch (InterruptedException e) {
-							System.out.println("InterruptedException");
-						}
+		while (true) {
+			for (int c = 0; c < cities.size(); c++)
+				for (int t = 0; t < searchTerms.size(); t++) {
+					//updateAds(cities.get(c), searchTerms.get(t));
+					System.out.println(cities.get(c) + " " + searchTerms.get(t));
+					for (Ad ad : newAds)
+						sendEmail(ad.getTitle(), "$" + ad.getPrice() + " in " + ad.getLocation() + "\n" + ad.getLink());
+					saveAds();
+					try {
+						Thread.sleep(3000);//(long)(((frequency + Math.random()) * 60000) / (searchTerms.size() * cities.size())));
 					}
-			}
+					catch (InterruptedException e) {
+						System.out.println("InterruptedException");
+					}
+				}
+		}
 	}
 
 	public static void constructSettingsGUI() {
-		String sCities = "", sTerms = "";
+		String sCities = "", sTerms = "", sNegs = "";
 		BasicTextEncryptor textEncryptor = new BasicTextEncryptor();
 		textEncryptor.setPassword("Nick");
 		Container p = f.getContentPane();
@@ -107,6 +107,7 @@ public final class CraigslistNotifier {
 		JLabel lRecipient = new JLabel("recipient:");
 		JLabel lCities = new JLabel("cities to search:");
 		JLabel lTerms = new JLabel("search terms:");
+		JLabel lNeg = new JLabel("negative keywords:");
 		JLabel lRefresh = new JLabel("refresh search results every               minutes");
 		//load text fields
 		for (int i = 0; i < cities.size(); i++) {
@@ -119,10 +120,16 @@ public final class CraigslistNotifier {
 			if (i < searchTerms.size() - 1)
 				sTerms += ", ";
 		}
+		for (int i = 0; i < negativeKeywords.size(); i++) {
+			sNegs += negativeKeywords.get(i);
+			if (i < negativeKeywords.size() - 1)
+				sNegs += ", ";
+		}
 		JTextField tEmail = new JTextField(CraigslistNotifier.email, 13);
 		JTextField tRecipient = new JTextField(recipient, 13);
 		JTextField tCities = new JTextField(sCities, 41);
 		JTextField tTerms = new JTextField(sTerms, 42);
+		JTextField tNeg = new JTextField(sNegs, 39);
 		JTextField tRefresh = new JTextField(Integer.toString(frequency), 3);
 		JPasswordField tPassword = new JPasswordField(password, 12);
 		//add elements to container
@@ -133,12 +140,14 @@ public final class CraigslistNotifier {
 		p.add(lRecipient);
 		p.add(lCities);
 		p.add(lTerms);
+		p.add(lNeg);
 		p.add(lRefresh);
 		p.add(tEmail);
 		p.add(tPassword);
 		p.add(tRecipient);
 		p.add(tCities);
 		p.add(tTerms);
+		p.add(tNeg);
 		p.add(tRefresh);
 		Insets insets = f.getInsets();
 		//position labels
@@ -156,8 +165,10 @@ public final class CraigslistNotifier {
 		lCities.setBounds(5 + insets.left, 122 + insets.top, size.width, size.height);
 		size = lTerms.getPreferredSize();
 		lTerms.setBounds(5 + insets.left, 143 + insets.top, size.width, size.height);
+		size = lNeg.getPreferredSize();
+		lNeg.setBounds(5 + insets.left, 164 + insets.top, size.width, size.height);
 		size = lRefresh.getPreferredSize();
-		lRefresh.setBounds(5 + insets.left, 164 + insets.top, size.width, size.height);
+		lRefresh.setBounds(5 + insets.left, 185 + insets.top, size.width, size.height);
 		//position text boxes
 		size = tEmail.getPreferredSize();
 		tEmail.setBounds(59 + insets.left, 20 + insets.top, size.width, size.height);
@@ -169,8 +180,10 @@ public final class CraigslistNotifier {
 		tCities.setBounds(100 + insets.left, 120 + insets.top, size.width, size.height);
 		size = tTerms.getPreferredSize();
 		tTerms.setBounds(89 + insets.left, 141 + insets.top, size.width, size.height);
+		size = tNeg.getPreferredSize();
+		tNeg.setBounds(122 + insets.left, 162 + insets.top, size.width, size.height);
 		size = tRefresh.getPreferredSize();
-		tRefresh.setBounds(172 + insets.left, 162 + insets.top, size.width, size.height);
+		tRefresh.setBounds(172 + insets.left, 183 + insets.top, size.width, size.height);
 		f.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent windowEvent) {
 				String n = System.getProperty("line.separator");
@@ -181,6 +194,7 @@ public final class CraigslistNotifier {
 					w.write(tRecipient.getText() + n);
 					w.write(tCities.getText() + n);
 					w.write(tTerms.getText() + n);
+					w.write(tNeg.getText() + n);
 					w.write(tRefresh.getText());
 					w.close();
 				}
@@ -190,7 +204,7 @@ public final class CraigslistNotifier {
 				loadSettings();
 			}
 		});
-		f.setSize(576, 225);
+		f.setSize(576, 246);
 		f.setResizable(true);
 		f.setLocationRelativeTo(null);
 	}
@@ -212,6 +226,7 @@ public final class CraigslistNotifier {
 				w.write("example@gmail.com" + n + n);
 				w.write("example@gmail.com" + n);
 				w.write("ensure <city>.craigslist.org is a valid url; separate entries with a comma and space" + n);
+				w.write("separate entries with a comma and space" + n);
 				w.write("separate entries with a comma and space" + n);
 				w.write("20");
 				w.close();
@@ -244,6 +259,14 @@ public final class CraigslistNotifier {
 			text = tokens.next();
 			if (!searchTerms.contains(text))
 				searchTerms.add(text);
+		}
+		tokens.close();
+		tokens = new Scanner(lines.nextLine());
+		tokens.useDelimiter(", ");
+		while (tokens.hasNext()) {
+			text = tokens.next();
+			if (!negativeKeywords.contains(text))
+				negativeKeywords.add(text);
 		}
 		tokens.close();
 		frequency = Integer.parseInt(lines.nextLine());
