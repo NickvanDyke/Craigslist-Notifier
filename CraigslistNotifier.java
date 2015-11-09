@@ -6,7 +6,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Scanner;
-import javax.imageio.ImageIO;
 import javax.mail.MessagingException;
 import javax.mail.internet.AddressException;
 import org.jasypt.util.text.BasicTextEncryptor;
@@ -28,6 +27,7 @@ public final class CraigslistNotifier {
 		loadAds();
 		if (firstTime) {
 			f.setVisible(true);
+			JOptionPane.showMessageDialog(null, "No saved settings found. Please enter your settings.\nYou can view more info by hovering over labels.\nChanges to settings will take effect when the window is closed.\nNote that making more than 1 request every\n~3 minutes may result in an automatic IP ban by Craigslist.\n\nAccess various options by right-clicking the icon in the system tray.");
 			Object lock = new Object();
 			Thread t = new Thread() {
 				public void run() {
@@ -65,12 +65,14 @@ public final class CraigslistNotifier {
 		while (true) {
 			settingsChanged = false;
 			start:
-			for (int c = 0; c < cities.size(); c++)
+			for (int c = 0; c < cities.size(); c++) {
+				if (settingsChanged)
+					break start;
 				for (int t = 0; t < searchTerms.size(); t++) {
 					if (settingsChanged)
 						break start;
-					updateAds(cities.get(c), searchTerms.get(t));
 					System.out.println(cities.get(c) + " " + searchTerms.get(t));
+					updateAds(cities.get(c), searchTerms.get(t));
 					for (Ad ad : newAds)
 						sendEmail(ad.getTitle(), "$" + ad.getPrice() + " in " + ad.getLocation() + "\n" + ad.getLink());
 					saveAds();
@@ -80,7 +82,12 @@ public final class CraigslistNotifier {
 					catch (InterruptedException e) {
 						System.out.println("InterruptedException");
 					}
+					if (settingsChanged)
+						break start;
 				}
+				if (settingsChanged)
+					break start;
+			}
 		}
 	}
 
@@ -113,7 +120,7 @@ public final class CraigslistNotifier {
 		JLabel lTerms = new JLabel("search terms:");
 		JLabel lNeg = new JLabel("negative keywords:");
 		JLabel lRefresh = new JLabel("refresh search results every               minutes");
-		JLabel lInfo = new JLabel("Hover over labels for more info");
+		JLabel lRequests = new JLabel("<html>You are currently making 1<br>request every " + (searchTerms.size() * cities.size()/(double)frequency) + " minutes</html>");
 		//load text fields
 		for (int i = 0; i < cities.size(); i++) {
 			sCities += cities.get(i);
@@ -132,17 +139,35 @@ public final class CraigslistNotifier {
 		}
 		JTextField tEmail = new JTextField(CraigslistNotifier.email, 13);
 		JTextField tRecipient = new JTextField(recipient, 13);
-		JTextField tCities = new JTextField(sCities, 41);
-		JTextField tTerms = new JTextField(sTerms, 42);
-		JTextField tNeg = new JTextField(sNegs, 39);
+		JTextField tCities = new JTextField(sCities, 9);
+		JTextField tTerms = new JTextField(sTerms, 28);
+		JTextField tNeg = new JTextField(sNegs, 25);
 		JTextField tRefresh = new JTextField(Integer.toString(frequency), 3);
 		JPasswordField tPassword = new JPasswordField(password, 12);
 		lEmail.setToolTipText("Gmail address to send emails from");
+		lLink.setToolTipText("https://www.google.com/settings/security/lesssecureapps");
 		lRecipient.setToolTipText("Email address to send emails to; doesn't have to be a Gmail address");
 		lCities.setToolTipText("ensure <city>.craigslist.org is a valid url; separate multiple entries with a comma and space");
 		lTerms.setToolTipText("separate multiple entries with a comma and space");
 		lNeg.setToolTipText("if an ad's title contains any negative keyword, you will not be notified of it; separate multiple entries with a comma and space");
+		lRequests.setToolTipText("Making more than 1 request every ~3 minutes may result in an automatic IP ban from Craigslist");
 		lPassword.setToolTipText("password for the Gmail account that emails are sent from; it is encrypted before being stored, and is used for nothing else than sending emails");
+		JButton bDonate = new JButton(new ImageIcon(CraigslistNotifier.class.getResource("/donateButton.png")));
+		bDonate.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if(Desktop.isDesktopSupported()) {
+					try {
+						Desktop.getDesktop().browse(new URI("https://www.paypal.me/NicholasVanDyke"));
+					}
+					catch (IOException i) {
+						System.out.println("IOException while opening webpage");
+					}
+					catch (URISyntaxException u) {
+						System.out.println("URISyntaxException while opening webpage");
+					}
+				}
+			}
+		});
 		//add elements to container
 		p.add(lEmailInstructions);
 		p.add(lEmail);
@@ -153,7 +178,7 @@ public final class CraigslistNotifier {
 		p.add(lTerms);
 		p.add(lNeg);
 		p.add(lRefresh);
-		p.add(lInfo);
+		p.add(lRequests);
 		p.add(tEmail);
 		p.add(tPassword);
 		p.add(tRecipient);
@@ -161,6 +186,7 @@ public final class CraigslistNotifier {
 		p.add(tTerms);
 		p.add(tNeg);
 		p.add(tRefresh);
+		p.add(bDonate);
 		Insets insets = f.getInsets();
 		//position labels
 		Dimension size = lEmailInstructions.getPreferredSize();
@@ -181,8 +207,8 @@ public final class CraigslistNotifier {
 		lNeg.setBounds(5 + insets.left, 164 + insets.top, size.width, size.height);
 		size = lRefresh.getPreferredSize();
 		lRefresh.setBounds(5 + insets.left, 185 + insets.top, size.width, size.height);
-		size = lInfo.getPreferredSize();
-		lInfo.setBounds(380 + insets.left, 185 + insets.top, size.width, size.height);
+		size = lRequests.getPreferredSize();
+		lRequests.setBounds(250 + insets.left, 1 + insets.top, size.width, size.height);
 		//position text boxes
 		size = tEmail.getPreferredSize();
 		tEmail.setBounds(59 + insets.left, 20 + insets.top, size.width, size.height);
@@ -191,13 +217,16 @@ public final class CraigslistNotifier {
 		size = tRecipient.getPreferredSize();
 		tRecipient.setBounds(59 + insets.left, 99 + insets.top, size.width, size.height);
 		size = tCities.getPreferredSize();
-		tCities.setBounds(100 + insets.left, 120 + insets.top, size.width, size.height);
+		tCities.setBounds(103 + insets.left, 120 + insets.top, size.width, size.height);
 		size = tTerms.getPreferredSize();
 		tTerms.setBounds(89 + insets.left, 141 + insets.top, size.width, size.height);
 		size = tNeg.getPreferredSize();
 		tNeg.setBounds(122 + insets.left, 162 + insets.top, size.width, size.height);
 		size = tRefresh.getPreferredSize();
 		tRefresh.setBounds(172 + insets.left, 183 + insets.top, size.width, size.height);
+		//position buttons
+		size = tRefresh.getPreferredSize();
+		bDonate.setBounds(280 + insets.left, 183 + insets.top, 96, 21);
 		f.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent windowEvent) {
 				String n = System.getProperty("line.separator");
@@ -216,10 +245,11 @@ public final class CraigslistNotifier {
 					System.out.println("Error writing settings to file");
 				}
 				loadSettings();
+				lRequests.setText("<html>You are currently making 1<br>request every " + (searchTerms.size() * cities.size()/(double)frequency) + " minutes</html>");
 			}
 		});
-		f.setSize(576, 246);
-		f.setResizable(true);
+		f.setSize(414, 236);
+		f.setResizable(false);
 		f.setLocationRelativeTo(null);
 	}
 
@@ -240,10 +270,7 @@ public final class CraigslistNotifier {
 				BufferedWriter w = new BufferedWriter(new FileWriter(new File("settings.txt")));
 				String n = System.getProperty("line.separator");
 				w.write("example@gmail.com" + n + n);
-				w.write("example@gmail.com" + n);
-				w.write("ensure <city>.craigslist.org is a valid url; separate entries with a comma and space" + n);
-				w.write("separate entries with a comma and space" + n);
-				w.write("separate entries with a comma and space" + n);
+				w.write("example@gmail.com" + n + n + n + n);
 				w.write("20");
 				w.close();
 				lines = new Scanner(new File("settings.txt"));
@@ -251,7 +278,6 @@ public final class CraigslistNotifier {
 			catch (IOException i) {
 				System.out.println("IOException creating settings.txt");
 			}
-			JOptionPane.showMessageDialog(null, "This is your first time running the app. Please fill out the settings.");
 			firstTime = true;
 		}
 		email = lines.nextLine();
@@ -299,17 +325,9 @@ public final class CraigslistNotifier {
 		TrayIcon trayIcon = null;
 		final PopupMenu popup = new PopupMenu();
 		final SystemTray tray = SystemTray.getSystemTray();
-		try {
-			trayIcon = new TrayIcon(ImageIO.read(new File("icon.png")), "Nick's Notifier");
-		}
-		catch (IOException e) {
-			System.out.println("icon.png not found");
-		}
-		MenuItem donateItem = new MenuItem("Donate");
+		trayIcon = new TrayIcon(f.getToolkit().getImage(CraigslistNotifier.class.getResource("/trayIcon.png")), "Nick's Notifier");
 		MenuItem settingsItem = new MenuItem("Settings");
 		MenuItem exitItem = new MenuItem("Exit");
-		popup.add(donateItem);
-		popup.addSeparator();
 		popup.add(settingsItem);
 		popup.add(exitItem);
 		trayIcon.setImageAutoSize(true);
@@ -320,21 +338,6 @@ public final class CraigslistNotifier {
 		catch (AWTException e) {
 			System.out.println("TrayIcon could not be added");
 		}
-		donateItem.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				if(Desktop.isDesktopSupported()) {
-					try {
-						Desktop.getDesktop().browse(new URI("https://www.paypal.me/NicholasVanDyke"));
-					}
-					catch (IOException i) {
-						System.out.println("IOException while opening webpage");
-					}
-					catch (URISyntaxException u) {
-						System.out.println("URISyntaxException while opening webpage");
-					}
-				}
-			}
-		});
 		settingsItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				f.setVisible(true);
@@ -342,6 +345,9 @@ public final class CraigslistNotifier {
 		});
 		exitItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				deleteOldAds();
+				new File("savedAds.txt").delete();
+				saveAds();
 				System.exit(0);
 			}
 		});
@@ -351,9 +357,8 @@ public final class CraigslistNotifier {
 		String html = "";
 		boolean skip, add;
 		newAds.clear();
-		System.out.println(term.replace("%20", " ") + " " + city);
 		try {
-			html = Scraper.getHtml("http://" + city + ".craigslist.org/search/sss?sort=date&query=" + term);
+			html = Scraper.getHtml("http://" + city + ".craigslist.org/search/sss?sort=date&query=" + term.replace(" ", "%20"));
 		}
 		catch (IOException e) {
 			sendEmail("IP blocked", "rip");
@@ -361,25 +366,30 @@ public final class CraigslistNotifier {
 			System.exit(0);
 		}
 		for (Ad temp : createAds(html)) {
-			System.out.println(temp);
+			//System.out.println(temp);
 			skip = false;
 			add = true;
 			if (ads.isEmpty()) {
 				ads.add(temp);
 				newAds.add(temp);
+				System.out.println("added: " + temp);
 			}
 			for (String word : negativeKeywords)
 				if (skip == false && temp.getTitle().toLowerCase().contains(word.toLowerCase())) {
 					skip = true;
 					add = false;
+					System.out.println("neg: " + temp);
 				}
 			if (!skip)
 				for (Ad ad : ads)
-					if (temp.equals(ad))
+					if (temp.equals(ad)) {
 						add = false;
+						System.out.println("already seen: " + temp);
+					}
 			if (add) {
 				ads.add(temp);
 				newAds.add(temp);
+				System.out.println("added: " + temp);
 			}
 		}
 	}
@@ -394,7 +404,7 @@ public final class CraigslistNotifier {
 		Ad temp;
 		String title, date, location = "n/a", link, city;
 		String[] splitHtml;
-		int price = 0;
+		int price;
 		city = str.substring(str.indexOf("<option value=\"") + 15, str.indexOf("</option>"));
 		city = city.substring(0, city.indexOf("\">"));
 		if (str.contains("<h4"))
@@ -407,21 +417,22 @@ public final class CraigslistNotifier {
 				location = adHtml.substring(adHtml.indexOf("<small>") + 9, adHtml.indexOf("</small>") - 1);
 			link = "https://" + city + ".craigslist.org" + adHtml.substring(adHtml.indexOf("href") + 6, adHtml.indexOf("html") + 4);
 			if (adHtml.contains("price"))
-				price = Integer.parseInt(adHtml.substring(adHtml.indexOf("price") + 8, adHtml.indexOf("</span")));		
+				price = Integer.parseInt(adHtml.substring(adHtml.indexOf("price") + 8, adHtml.indexOf("</span")));
+			else price = 0;
 			temp = new Ad(title, price, date, location, link);
 			result.add(temp);
 		}
 		return result;
 	}
 
-	//deletes the ad if it's date is 90 days older than the current date
+	//deletes the ad if it's date is 30 days older than the current date
 	public static void deleteOldAds() {
-		ArrayList<Ad> adsToBeDeleted = new ArrayList<Ad>();
-		for (Ad ad : ads)
-			if (ad.getDate().getTime() < new Date().getTime() - 7776000000L)
-				adsToBeDeleted.add(ad);
-		for (Ad ad : adsToBeDeleted)
-			ads.remove(ad);
+		long cutoff = new Date().getTime() - 2592000000L;
+		for (int i = 0; i < ads.size(); i++)
+			if (ads.get(i).getDate().getTime() <  cutoff) {
+				ads.remove(i);
+				i--;
+			}
 	}
 
 	public static void loadAds() {

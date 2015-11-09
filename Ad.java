@@ -15,6 +15,7 @@ public class Ad implements Serializable {
 		this.price = price;
 		try {
 			this.date = df.parse(date);
+			this.date.setYear(new Date().getYear());
 		}
 		catch (ParseException e) {
 			System.out.println("ParseException");
