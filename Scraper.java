@@ -2,16 +2,16 @@ import java.io.*;
 import java.net.*;
 
 public final class Scraper {
-	private static String html;
 
 	public static String getHtml(String url) throws IOException {
-		html = "";
+		StringBuilder html = new StringBuilder();
 		BufferedReader reader = new BufferedReader(new InputStreamReader(new URL(url).openConnection().getInputStream()));
 		String line = reader.readLine();
 		while (line != null) {
-			html += line;
+			html.append(line);
 			line = reader.readLine();
 		}
-		return html;
+		reader.close();
+		return html.toString();
 	}
 }
