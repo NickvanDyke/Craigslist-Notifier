@@ -440,7 +440,7 @@ public final class CraigslistNotifier {
 
 	//deletes the ad if it's date is 30 days older than the current date
 	public static void deleteOldAds() {
-		long cutoff = new Date().getTime() - 2592000000L;
+		long cutoff = new Date().getTime() - 5184000000L;
 		for (int i = 0; i < ads.size(); i++)
 			if (ads.get(i).getDate().getTime() <  cutoff) {
 				ads.remove(i);
