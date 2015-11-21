@@ -16,7 +16,7 @@ public final class CraigslistNotifier {
 	private static ArrayList<Ad> ads = new ArrayList<Ad>(), newAds = new ArrayList<Ad>();
 	private static ArrayList<String> searchTerms = new ArrayList<String>(), cities = new ArrayList<String>(), negativeKeywords = new ArrayList<String>();
 	private static String email, password = "", recipient;
-	private static int frequency;
+	private static double frequency;
 	private static JFrame f = new JFrame("Settings");
 	private static boolean firstTime, settingsChanged;
 
@@ -35,13 +35,11 @@ public final class CraigslistNotifier {
 						while (f.isVisible()) {
 							try {
 								lock.wait();
-							}
-							catch (InterruptedException e) {
+							} catch (InterruptedException e) {
 								System.out.println("InterruptedException");
 							}
 						}
 						loadSettings();
-
 					}
 				}
 			};
@@ -57,8 +55,7 @@ public final class CraigslistNotifier {
 			});
 			try {
 				t.join();
-			}
-			catch (InterruptedException e) {
+			} catch (InterruptedException e) {
 				System.out.println("InterruptedException");
 			}
 		}
@@ -78,8 +75,7 @@ public final class CraigslistNotifier {
 						saveAds();
 						try {
 							Thread.sleep((long)(((frequency + Math.random()) * 60000) / (searchTerms.size() * cities.size())));
-						}
-						catch (InterruptedException e) {
+						} catch (InterruptedException e) {
 							System.out.println("InterruptedException");
 						}
 						if (settingsChanged)
@@ -106,11 +102,9 @@ public final class CraigslistNotifier {
 			public void mouseClicked(MouseEvent e) {
 				try {
 					Desktop.getDesktop().browse(new URI("https://www.google.com/settings/security/lesssecureapps"));
-				}
-				catch (IOException i) {
+				} catch (IOException i) {
 					System.out.println("IOException while opening webpage");
-				}
-				catch (URISyntaxException u) {
+				} catch (URISyntaxException u) {
 					System.out.println("URISyntaxException");
 				}
 			}
@@ -123,7 +117,7 @@ public final class CraigslistNotifier {
 		JLabel lRequests = new JLabel();
 		if (searchTerms.size() * cities.size() == 0)
 			lRequests.setText("<html>You are currently making 1<br>request every ∞ minutes</html>");
-		else lRequests.setText("<html>You are currently making 1<br>request every " + (double)frequency/(searchTerms.size() * cities.size()) + " minutes</html>");
+		else lRequests.setText("<html>You are currently making 1<br>request every " + frequency/(searchTerms.size() * cities.size()) + " minutes</html>");
 		//load text fields
 		for (int i = 0; i < cities.size(); i++) {
 			sCities += cities.get(i);
@@ -145,7 +139,7 @@ public final class CraigslistNotifier {
 		JTextField tCities = new JTextField(sCities, 9);
 		JTextField tTerms = new JTextField(sTerms, 25);
 		JTextField tNeg = new JTextField(sNegs, 22);
-		JTextField tRefresh = new JTextField(Integer.toString(frequency), 3);
+		JTextField tRefresh = new JTextField(Double.toString(frequency), 3);
 		JPasswordField tPassword = new JPasswordField(password, 12);
 		JCheckBox cSavePass = new JCheckBox("save password locally");
 		if (password.length() > 0)
@@ -165,11 +159,9 @@ public final class CraigslistNotifier {
 				if(Desktop.isDesktopSupported()) {
 					try {
 						Desktop.getDesktop().browse(new URI("https://www.paypal.me/NicholasVanDyke"));
-					}
-					catch (IOException i) {
+					} catch (IOException i) {
 						System.out.println("IOException while opening webpage");
-					}
-					catch (URISyntaxException u) {
+					} catch (URISyntaxException u) {
 						System.out.println("URISyntaxException while opening webpage");
 					}
 				}
@@ -234,8 +226,6 @@ public final class CraigslistNotifier {
 		tRefresh.setBounds(172 + insets.left, 146 + insets.top, size.width, size.height);
 		size = cSavePass.getPreferredSize();
 		cSavePass.setBounds(205 + insets.left, 38 + insets.top, size.width, size.height);
-		//position buttons
-		size = tRefresh.getPreferredSize();
 		bDonate.setBounds(271 + insets.left, 146 + insets.top, 96, 21);
 		f.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent windowEvent) {
@@ -254,14 +244,13 @@ public final class CraigslistNotifier {
 					w.write(tNeg.getText() + n);
 					w.write(tRefresh.getText());
 					w.close();
-				}
-				catch (IOException e) {
+				} catch (IOException e) {
 					System.out.println("Error writing settings to file");
 				}
 				loadSettings();
 				if (searchTerms.size() * cities.size() == 0)
 					lRequests.setText("<html>You are currently making 1<br>request every ∞ minutes</html>");
-				else lRequests.setText("<html>You are currently making 1<br>request every " + (double)frequency/(searchTerms.size() * cities.size()) + " minutes</html>");
+				else lRequests.setText("<html>You are currently making 1<br>request every " + frequency/(searchTerms.size() * cities.size()) + " minutes</html>");
 			}
 		});
 		f.setSize(379, 202);
@@ -280,8 +269,7 @@ public final class CraigslistNotifier {
 		textEncryptor.setPassword("Nick");
 		try {
 			lines = new Scanner(new File("settings.txt"));
-		}
-		catch (FileNotFoundException e) {
+		} catch (FileNotFoundException e) {
 			try {
 				BufferedWriter w = new BufferedWriter(new FileWriter(new File("settings.txt")));
 				String n = System.getProperty("line.separator");
@@ -290,8 +278,7 @@ public final class CraigslistNotifier {
 				w.write("20");
 				w.close();
 				lines = new Scanner(new File("settings.txt"));
-			}
-			catch (IOException i) {
+			} catch (IOException i) {
 				System.out.println("IOException creating settings.txt");
 			}
 			firstTime = true;
@@ -325,7 +312,7 @@ public final class CraigslistNotifier {
 				negativeKeywords.add(text);
 		}
 		tokens.close();
-		frequency = Integer.parseInt(lines.nextLine());
+		frequency = Double.parseDouble(lines.nextLine()) - 0.5;
 		lines.close();
 		if (!st.equals(searchTerms) || !c.equals(cities) || !nk.equals(negativeKeywords))
 			settingsChanged = true;
@@ -348,8 +335,7 @@ public final class CraigslistNotifier {
 		trayIcon.setPopupMenu(popup);
 		try {
 			tray.add(trayIcon);
-		}
-		catch (AWTException e) {
+		} catch (AWTException e) {
 			System.out.println("TrayIcon could not be added");
 		}
 		settingsItem.addActionListener(new ActionListener() {
@@ -369,42 +355,36 @@ public final class CraigslistNotifier {
 
 	public static void updateAds(String city, String term) {
 		String html = "";
-		boolean skip, add;
 		newAds.clear();
 		try {
 			html = Scraper.getHtml("http://" + city + ".craigslist.org/search/sss?sort=date&query=" + term.replace(" ", "%20"));
-		}
-		catch (IOException e) {
-			sendEmail("IP blocked", "rip");
+		} catch (IOException e) {
+			sendEmail("IP blocked", "Either your internet connection is offline, or your computer's ip address has been automatically blocked by Craigslist. It should be unblocked within ~24 hours. This application has exited.");
 			System.out.print("ip blocked");
 			System.exit(0);
 		}
-		for (Ad temp : createAds(html)) {
-			skip = false;
-			add = true;
-			if (ads.isEmpty()) {
-				ads.add(temp);
-				newAds.add(temp);
-				System.out.println("added: " + temp);
-			}
-			for (String word : negativeKeywords)
-				if (skip == false && temp.getTitle().toLowerCase().contains(word.toLowerCase())) {
-					skip = true;
-					add = false;
-					System.out.println("neg: " + temp);
+		loop:
+			for (Ad temp : createAds(html)) {
+				if (ads.isEmpty()) {
+					ads.add(temp);
+					newAds.add(temp);
+					System.out.println("add: " + temp);
+					continue loop;
 				}
-			if (!skip)
+				for (String word : negativeKeywords)
+					if (temp.getTitle().toLowerCase().contains(word.toLowerCase())) {
+						System.out.println("neg: " + temp);
+						continue loop;
+					}
 				for (Ad ad : ads)
 					if (temp.equals(ad)) {
-						add = false;
-						System.out.println("already seen: " + temp);
+						System.out.println("dup: " + temp);
+						continue loop;
 					}
-			if (add) {
 				ads.add(temp);
 				newAds.add(temp);
-				System.out.println("added: " + temp);
+				System.out.println("add: " + temp);
 			}
-		}
 	}
 
 	//given the html code for a Craigslist page, creates and returns an ArrayList containing Ads created from the html code
@@ -439,9 +419,9 @@ public final class CraigslistNotifier {
 		return result;
 	}
 
-	//deletes the ad if it's date is 30 days older than the current date
+	//deletes the ad if it's date is 46 days older than the current date
 	public static void deleteOldAds() {
-		long cutoff = new Date().getTime() - 5184000000L;
+		long cutoff = new Date().getTime() - 3974400000L;
 		for (int i = 0; i < ads.size(); i++)
 			if (ads.get(i).getDate().getTime() <  cutoff) {
 				ads.remove(i);
@@ -456,17 +436,14 @@ public final class CraigslistNotifier {
 			while (!end) {
 				try {
 					ads.add((Ad)ois.readObject());
-				}
-				catch (IOException e) {
+				} catch (IOException e) {
 					end = true;
-				}
-				catch (ClassNotFoundException e) {
+				} catch (ClassNotFoundException e) {
 					System.out.println("ClassNotFoundException");
 				}
 			}
 			ois.close();
-		}
-		catch (IOException e) {
+		} catch (IOException e) {
 			System.out.println("IOException while loading ads");
 		}
 	}
@@ -477,8 +454,7 @@ public final class CraigslistNotifier {
 			for (Ad ad : ads)
 				oos.writeObject(ad);
 			oos.close();
-		}
-		catch (IOException e) {
+		} catch (IOException e) {
 			System.out.println("IOException while saving");
 		}
 	}
@@ -486,10 +462,8 @@ public final class CraigslistNotifier {
 	public static void sendEmail(String subject, String body) {
 		try {
 			GoogleMail.Send(email, password, recipient, subject, body);
-		}
-		catch (AddressException e) {
-		}
-		catch (MessagingException e) {
+		} catch (AddressException e) {
+		} catch (MessagingException e) {
 		}
 	}
 }
