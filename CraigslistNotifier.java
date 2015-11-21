@@ -16,7 +16,7 @@ public final class CraigslistNotifier {
 	private static ArrayList<Ad> ads = new ArrayList<Ad>(), newAds = new ArrayList<Ad>();
 	private static ArrayList<String> searchTerms = new ArrayList<String>(), cities = new ArrayList<String>(), negativeKeywords = new ArrayList<String>();
 	private static String email, password = "", recipient;
-	private static double frequency;
+	private static int frequency;
 	private static JFrame f = new JFrame("Settings");
 	private static boolean firstTime, settingsChanged;
 
@@ -74,7 +74,7 @@ public final class CraigslistNotifier {
 							sendEmail(ad.getTitle(), "$" + ad.getPrice() + " in " + ad.getLocation() + "\n" + ad.getLink());
 						saveAds();
 						try {
-							Thread.sleep((long)(((frequency + Math.random()) * 60000) / (searchTerms.size() * cities.size())));
+							Thread.sleep((long)((frequency * 60000.0) / (searchTerms.size() * cities.size())));
 						} catch (InterruptedException e) {
 							System.out.println("InterruptedException");
 						}
@@ -117,7 +117,7 @@ public final class CraigslistNotifier {
 		JLabel lRequests = new JLabel();
 		if (searchTerms.size() * cities.size() == 0)
 			lRequests.setText("<html>You are currently making 1<br>request every ∞ minutes</html>");
-		else lRequests.setText("<html>You are currently making 1<br>request every " + frequency/(searchTerms.size() * cities.size()) + " minutes</html>");
+		else lRequests.setText("<html>You are currently making 1<br>request every " + (double)frequency/(searchTerms.size() * cities.size()) + " minutes</html>");
 		//load text fields
 		for (int i = 0; i < cities.size(); i++) {
 			sCities += cities.get(i);
@@ -250,7 +250,7 @@ public final class CraigslistNotifier {
 				loadSettings();
 				if (searchTerms.size() * cities.size() == 0)
 					lRequests.setText("<html>You are currently making 1<br>request every ∞ minutes</html>");
-				else lRequests.setText("<html>You are currently making 1<br>request every " + frequency/(searchTerms.size() * cities.size()) + " minutes</html>");
+				else lRequests.setText("<html>You are currently making 1<br>request every " + (double)frequency/(searchTerms.size() * cities.size()) + " minutes</html>");
 			}
 		});
 		f.setSize(379, 202);
@@ -312,7 +312,7 @@ public final class CraigslistNotifier {
 				negativeKeywords.add(text);
 		}
 		tokens.close();
-		frequency = Double.parseDouble(lines.nextLine()) - 0.5;
+		frequency = Integer.parseInt(lines.nextLine());
 		lines.close();
 		if (!st.equals(searchTerms) || !c.equals(cities) || !nk.equals(negativeKeywords))
 			settingsChanged = true;
@@ -365,17 +365,17 @@ public final class CraigslistNotifier {
 		}
 		loop:
 			for (Ad temp : createAds(html)) {
+				for (String word : negativeKeywords)
+					if (temp.getTitle().toLowerCase().contains(word.toLowerCase())) {
+						System.out.println("neg: " + temp);
+						continue loop;
+					}
 				if (ads.isEmpty()) {
 					ads.add(temp);
 					newAds.add(temp);
 					System.out.println("add: " + temp);
 					continue loop;
 				}
-				for (String word : negativeKeywords)
-					if (temp.getTitle().toLowerCase().contains(word.toLowerCase())) {
-						System.out.println("neg: " + temp);
-						continue loop;
-					}
 				for (Ad ad : ads)
 					if (temp.equals(ad)) {
 						System.out.println("dup: " + temp);
