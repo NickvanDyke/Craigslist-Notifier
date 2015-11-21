@@ -139,7 +139,7 @@ public final class CraigslistNotifier {
 		JTextField tCities = new JTextField(sCities, 9);
 		JTextField tTerms = new JTextField(sTerms, 25);
 		JTextField tNeg = new JTextField(sNegs, 22);
-		JTextField tRefresh = new JTextField(Double.toString(frequency), 3);
+		JTextField tRefresh = new JTextField(Integer.toString(frequency), 3);
 		JPasswordField tPassword = new JPasswordField(password, 12);
 		JCheckBox cSavePass = new JCheckBox("save password locally");
 		if (password.length() > 0)
