@@ -14,7 +14,7 @@ import java.util.Date;
 
 public final class CraigslistNotifier {
 	private static ArrayList<Ad> ads = new ArrayList<Ad>(), newAds = new ArrayList<Ad>();
-	private static ArrayList<String> searchTerms = new ArrayList<String>(), cities = new ArrayList<String>(), negativeKeywords = new ArrayList<String>();
+	private static ArrayList<String> urls = new ArrayList<String>(), negativeKeywords = new ArrayList<String>();
 	private static String email, password = "", recipient;
 	private static int frequency;
 	private static JFrame f = new JFrame("Settings");
@@ -62,24 +62,15 @@ public final class CraigslistNotifier {
 		while (true) {
 			settingsChanged = false;
 			start:
-				for (int c = 0; c < cities.size(); c++) {
-					if (settingsChanged)
-						break start;
-					for (int t = 0; t < searchTerms.size(); t++) {
-						if (settingsChanged)
-							break start;
-						System.out.println(cities.get(c) + " " + searchTerms.get(t));
-						updateAds(cities.get(c), searchTerms.get(t));
-						for (Ad ad : newAds)
-							sendEmail(ad.getTitle(), "$" + ad.getPrice() + " in " + ad.getLocation() + "\n" + ad.getLink());
-						saveAds();
-						try {
-							Thread.sleep((long)((frequency * 60000.0) / (searchTerms.size() * cities.size())));
-						} catch (InterruptedException e) {
-							System.out.println("InterruptedException");
-						}
-						if (settingsChanged)
-							break start;
+				for (int i = 0; i < urls.size(); i++) {
+					updateAds(urls.get(i));
+					for (Ad ad : newAds)
+						sendEmail(ad.getTitle(), "$" + ad.getPrice() + " in " + ad.getLocation() + "\n" + ad.getLink());
+					saveAds();
+					try {
+						Thread.sleep((long)((frequency * 60000.0) / (urls.size())));
+					} catch (InterruptedException e) {
+						System.out.println("InterruptedException");
 					}
 					if (settingsChanged)
 						break start;
@@ -88,7 +79,7 @@ public final class CraigslistNotifier {
 	}
 
 	public static void constructSettingsGUI() {
-		String sCities = "", sTerms = "", sNegs = "";
+		String sUrls = "", sNegs = "";
 		BasicTextEncryptor textEncryptor = new BasicTextEncryptor();
 		textEncryptor.setPassword("Nick");
 		Container p = f.getContentPane();
@@ -110,24 +101,18 @@ public final class CraigslistNotifier {
 			}
 		});
 		JLabel lRecipient = new JLabel("recipient:");
-		JLabel lCities = new JLabel("cities to search:");
-		JLabel lTerms = new JLabel("search terms:");
+		JLabel lUrls = new JLabel("URLs to parse:");
 		JLabel lNeg = new JLabel("negative keywords:");
 		JLabel lRefresh = new JLabel("refresh search results every               minutes");
 		JLabel lRequests = new JLabel();
-		if (searchTerms.size() * cities.size() == 0)
+		if (urls.size() == 0)
 			lRequests.setText("<html>You are currently making 1<br>request every ∞ minutes</html>");
-		else lRequests.setText("<html>You are currently making 1<br>request every " + (double)frequency/(searchTerms.size() * cities.size()) + " minutes</html>");
+		else lRequests.setText("<html>You are currently making 1<br>request every " + (double)frequency/(urls.size()) + " minutes</html>");
 		//load text fields
-		for (int i = 0; i < cities.size(); i++) {
-			sCities += cities.get(i);
-			if (i < cities.size() - 1)
-				sCities += ", ";
-		}
-		for (int i = 0; i < searchTerms.size(); i++) {
-			sTerms += searchTerms.get(i);
-			if (i < searchTerms.size() - 1)
-				sTerms += ", ";
+		for (int i = 0; i < urls.size(); i++) {
+			sUrls += urls.get(i);
+			if (i < urls.size() - 1)
+				sUrls += ", ";
 		}
 		for (int i = 0; i < negativeKeywords.size(); i++) {
 			sNegs += negativeKeywords.get(i);
@@ -136,8 +121,7 @@ public final class CraigslistNotifier {
 		}
 		JTextField tEmail = new JTextField(CraigslistNotifier.email, 13);
 		JTextField tRecipient = new JTextField(recipient, 13);
-		JTextField tCities = new JTextField(sCities, 9);
-		JTextField tTerms = new JTextField(sTerms, 25);
+		JTextField tUrls = new JTextField(sUrls, 25);
 		JTextField tNeg = new JTextField(sNegs, 22);
 		JTextField tRefresh = new JTextField(Integer.toString(frequency), 3);
 		JPasswordField tPassword = new JPasswordField(password, 12);
@@ -148,8 +132,7 @@ public final class CraigslistNotifier {
 		lEmail.setToolTipText("Gmail address to send emails from");
 		lLink.setToolTipText("https://www.google.com/settings/security/lesssecureapps");
 		lRecipient.setToolTipText("Email address to send emails to; doesn't have to be a Gmail address");
-		lCities.setToolTipText("Ensure <city>.craigslist.org is a valid url; separate multiple entries with a comma and space");
-		lTerms.setToolTipText("Separate multiple entries with a comma and space");
+		lUrls.setToolTipText("separate multiple entries with a comma and space");
 		lNeg.setToolTipText("If an ad's title contains any negative keyword, you will not be notified of it; separate multiple entries with a comma and space");
 		lRequests.setToolTipText("Making more than 1 request every ~3 minutes may result in an automatic IP ban from Craigslist");
 		lPassword.setToolTipText("Password for the Gmail account that emails are sent from; used for nothing else than sending emails, and only encrypted and stored locally if you choose to");
@@ -173,16 +156,14 @@ public final class CraigslistNotifier {
 		p.add(lPassword);
 		p.add(lLink);
 		p.add(lRecipient);
-		p.add(lCities);
-		p.add(lTerms);
+		p.add(lUrls);
 		p.add(lNeg);
 		p.add(lRefresh);
 		p.add(lRequests);
 		p.add(tEmail);
 		p.add(tPassword);
 		p.add(tRecipient);
-		p.add(tCities);
-		p.add(tTerms);
+		p.add(tUrls);
 		p.add(tNeg);
 		p.add(tRefresh);
 		p.add(cSavePass);
@@ -199,10 +180,8 @@ public final class CraigslistNotifier {
 		lLink.setBounds(235 + insets.left, 6 + insets.top, size.width, size.height);
 		size = lRecipient.getPreferredSize();
 		lRecipient.setBounds(5 + insets.left, 64 + insets.top, size.width, size.height);
-		size = lCities.getPreferredSize();
-		lCities.setBounds(5 + insets.left, 85 + insets.top, size.width, size.height);
-		size = lTerms.getPreferredSize();
-		lTerms.setBounds(5 + insets.left, 106 + insets.top, size.width, size.height);
+		size = lUrls.getPreferredSize();
+		lUrls.setBounds(5 + insets.left, 106 + insets.top, size.width, size.height);
 		size = lNeg.getPreferredSize();
 		lNeg.setBounds(5 + insets.left, 127 + insets.top, size.width, size.height);
 		size = lRefresh.getPreferredSize();
@@ -216,10 +195,8 @@ public final class CraigslistNotifier {
 		tPassword.setBounds(70 + insets.left, 41 + insets.top, size.width, size.height);
 		size = tRecipient.getPreferredSize();
 		tRecipient.setBounds(59 + insets.left, 62 + insets.top, size.width, size.height);
-		size = tCities.getPreferredSize();
-		tCities.setBounds(103 + insets.left, 83 + insets.top, size.width, size.height);
-		size = tTerms.getPreferredSize();
-		tTerms.setBounds(89 + insets.left, 104 + insets.top, size.width, size.height);
+		size = tUrls.getPreferredSize();
+		tUrls.setBounds(89 + insets.left, 104 + insets.top, size.width, size.height);
 		size = tNeg.getPreferredSize();
 		tNeg.setBounds(122 + insets.left, 125 + insets.top, size.width, size.height);
 		size = tRefresh.getPreferredSize();
@@ -239,8 +216,7 @@ public final class CraigslistNotifier {
 						password = tPassword.getText();
 					w.write(n);
 					w.write(tRecipient.getText() + n);
-					w.write(tCities.getText() + n);
-					w.write(tTerms.getText() + n);
+					w.write(tUrls.getText() + n);
 					w.write(tNeg.getText() + n);
 					w.write(tRefresh.getText());
 					w.close();
@@ -248,9 +224,9 @@ public final class CraigslistNotifier {
 					System.out.println("Error writing settings to file");
 				}
 				loadSettings();
-				if (searchTerms.size() * cities.size() == 0)
+				if (urls.size() == 0)
 					lRequests.setText("<html>You are currently making 1<br>request every ∞ minutes</html>");
-				else lRequests.setText("<html>You are currently making 1<br>request every " + (double)frequency/(searchTerms.size() * cities.size()) + " minutes</html>");
+				else lRequests.setText("<html>You are currently making 1<br>request every " + ((double)frequency/(urls.size()) + " minutes</html>"));
 			}
 		});
 		f.setSize(379, 202);
@@ -259,11 +235,10 @@ public final class CraigslistNotifier {
 	}
 
 	public static void loadSettings() {
-		ArrayList<String> st = new ArrayList<String>(searchTerms), c = new ArrayList<String>(cities), nk = new ArrayList<String>(negativeKeywords);
+		ArrayList<String> u = new ArrayList<String>(urls), nk = new ArrayList<String>(negativeKeywords);
 		String text;
 		Scanner lines = null, tokens = null;
-		searchTerms.clear();
-		cities.clear();
+		urls.clear();
 		negativeKeywords.clear();
 		BasicTextEncryptor textEncryptor = new BasicTextEncryptor();
 		textEncryptor.setPassword("Nick");
@@ -292,16 +267,8 @@ public final class CraigslistNotifier {
 		tokens.useDelimiter(", ");
 		while (tokens.hasNext()) {
 			text = tokens.next();
-			if (!cities.contains(text))
-				cities.add(text);
-		}
-		tokens.close();
-		tokens = new Scanner(lines.nextLine());
-		tokens.useDelimiter(", ");
-		while (tokens.hasNext()) {
-			text = tokens.next();
-			if (!searchTerms.contains(text))
-				searchTerms.add(text);
+			if (!urls.contains(text))
+				urls.add(text);
 		}
 		tokens.close();
 		tokens = new Scanner(lines.nextLine());
@@ -314,7 +281,7 @@ public final class CraigslistNotifier {
 		tokens.close();
 		frequency = Integer.parseInt(lines.nextLine());
 		lines.close();
-		if (!st.equals(searchTerms) || !c.equals(cities) || !nk.equals(negativeKeywords))
+		if (!u.equals(urls) || !nk.equals(negativeKeywords))
 			settingsChanged = true;
 	}
 
@@ -353,16 +320,17 @@ public final class CraigslistNotifier {
 		});
 	}
 
-	public static void updateAds(String city, String term) {
+	public static void updateAds(String url) {
 		String html = "";
 		newAds.clear();
 		try {
-			html = Scraper.getHtml("http://" + city + ".craigslist.org/search/sss?sort=date&query=" + term.replace(" ", "%20"));
+			html = Scraper.getHtml(url);
 		} catch (IOException e) {
 			sendEmail("IP blocked", "Either your internet connection is offline, or your computer's ip address has been automatically blocked by Craigslist. It should be unblocked within ~24 hours. This application has exited.");
 			System.out.print("ip blocked");
 			System.exit(0);
 		}
+		System.out.println(url);
 		loop:
 			for (Ad temp : createAds(html)) {
 				for (String word : negativeKeywords)

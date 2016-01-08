@@ -28,7 +28,7 @@ public class Ad implements Serializable {
 	}
 
 	public boolean equals(Ad o) {
-		return title.equals(o.getTitle()) && price == o.getPrice() && location.equals(o.getLocation()) && link.equals(o.getLink()) && date.equals(o.getDate());
+		return title.equals(o.getTitle()) && price == o.getPrice() && location.equals(o.getLocation()) && link.equals(o.getLink());
 	}
 
 	public String getTitle() {
