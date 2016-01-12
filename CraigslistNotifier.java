@@ -4,6 +4,7 @@ import java.awt.event.*;
 import javax.swing.*;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Scanner;
 import javax.mail.MessagingException;
@@ -79,6 +80,7 @@ public final class CraigslistNotifier {
 	}
 
 	public static void constructSettingsGUI() {
+		DecimalFormat formatter = new DecimalFormat("##.#");
 		String sUrls = "", sNegs = "";
 		BasicTextEncryptor textEncryptor = new BasicTextEncryptor();
 		textEncryptor.setPassword("Nick");
@@ -106,8 +108,8 @@ public final class CraigslistNotifier {
 		JLabel lRefresh = new JLabel("refresh search results every               minutes");
 		JLabel lRequests = new JLabel();
 		if (urls.size() == 0)
-			lRequests.setText("<html>You are currently making 1<br>request every ∞ minutes</html>");
-		else lRequests.setText("<html>You are currently making 1<br>request every " + (double)frequency/(urls.size()) + " minutes</html>");
+			lRequests.setText("<html>You are currently making 1<br>request every n/a minutes</html>");
+		else lRequests.setText("<html>You are currently making 1<br>request every " + formatter.format((double)frequency/urls.size()) + " minutes</html>");
 		//load text fields
 		for (int i = 0; i < urls.size(); i++) {
 			sUrls += urls.get(i);
@@ -225,8 +227,8 @@ public final class CraigslistNotifier {
 				}
 				loadSettings();
 				if (urls.size() == 0)
-					lRequests.setText("<html>You are currently making 1<br>request every ∞ minutes</html>");
-				else lRequests.setText("<html>You are currently making 1<br>request every " + ((double)frequency/(urls.size()) + " minutes</html>"));
+					lRequests.setText("<html>You are currently making 1<br>request every n/a minutes</html>");
+				else lRequests.setText("<html>You are currently making 1<br>request every " + formatter.format((double)frequency/urls.size()) + " minutes</html>");
 			}
 		});
 		f.setSize(379, 202);
@@ -249,7 +251,7 @@ public final class CraigslistNotifier {
 				BufferedWriter w = new BufferedWriter(new FileWriter(new File("settings.txt")));
 				String n = System.getProperty("line.separator");
 				w.write("example@gmail.com" + n + n);
-				w.write("example@gmail.com" + n + n + n + n);
+				w.write("example@gmail.com" + n + n + n);
 				w.write("20");
 				w.close();
 				lines = new Scanner(new File("settings.txt"));
