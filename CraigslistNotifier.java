@@ -372,7 +372,7 @@ public final class CraigslistNotifier {
 		city = city.substring(0, city.indexOf("\">"));
 		if (str.contains("<h4"))
 			splitHtml =  str.substring(str.indexOf("<p"), str.indexOf("<h4")).split("</p>");
-		else splitHtml = str.substring(str.indexOf("<p"), str.indexOf("<div id=\"mapcontainer")).split("</p>");
+		else splitHtml = str.substring(str.indexOf("<p"), str.indexOf("<div id=\"mapcontainer") - 7).split("</p>");
 		for (String adHtml : splitHtml) {
 			title = adHtml.substring(adHtml.indexOf("hdrlnk\">") + 8, adHtml.indexOf("</a> </span>")).replace("&amp;", "&");
 			date = adHtml.substring(adHtml.indexOf("title=\"") + 7, adHtml.indexOf("title=\"") + 29);
