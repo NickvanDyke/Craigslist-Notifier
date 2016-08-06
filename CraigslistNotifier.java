@@ -365,16 +365,17 @@ public final class CraigslistNotifier {
 			return result;
 		}
 		Ad temp;
-		String title, date, location, link, city;
+		String title, date, location, link, city, adHtml;
 		String[] splitHtml;
 		int price;
 		city = str.substring(str.indexOf("<option value=\"") + 15, str.indexOf("</option>"));
 		city = city.substring(0, city.indexOf("\">"));
 		if (str.contains("<h4"))
 			splitHtml =  str.substring(str.indexOf("<p"), str.indexOf("<h4")).split("</p>");
-		else splitHtml = str.substring(str.indexOf("<p"), str.indexOf("<div id=\"mapcontainer") - 7).split("</p>");
-		for (String adHtml : splitHtml) {
-			title = adHtml.substring(adHtml.indexOf("hdrlnk\">") + 8, adHtml.indexOf("</a> </span>")).replace("&amp;", "&");
+		else splitHtml = str.substring(str.indexOf("<p"), str.indexOf("<div id=\"mapcontainer")).split("</p>");
+		for (int i = 0; i < splitHtml.length - 1; i++) {
+			adHtml = splitHtml[i];
+			title = adHtml.substring(adHtml.indexOf("<span id=\"titletextonly\">") + 25, adHtml.lastIndexOf("</span></a>")).replace("&amp;", "&");
 			date = adHtml.substring(adHtml.indexOf("title=\"") + 7, adHtml.indexOf("title=\"") + 29);
 			if (adHtml.contains("<small>"))
 				location = adHtml.substring(adHtml.indexOf("<small>") + 9, adHtml.indexOf("</small>") - 1);
