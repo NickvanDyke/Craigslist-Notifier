@@ -1,3 +1,5 @@
+(not currently working, craigslist made some changes and I haven't updated accordingly yet)
+
 Given search terms, cities, and a refresh frequency, this automatically checks Craigslist for new postings, and emails the given recipient a notification using the given Gmail address when new postings are found.
 
 Use by downloading NicksNotifier.jar from https://github.com/NickvanDyke/Notifier/releases, running it, and following the instructions. The settings are not very foolproof yet, so be careful to enter your settings as it says. Note that you will probably receive a lot of emails the first time you run it because of all the new (to the application) results.
